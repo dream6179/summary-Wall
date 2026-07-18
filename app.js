@@ -61,7 +61,7 @@ function renderCards(dataArray, append = false) {
                 <button class="menu-item btn-hide">不要顯示</button>
             </div>
 
-            <!-- 💡 這裡改成不論有沒有原圖都強制渲染相框，沒原圖就原地秀出 AI 畫布 -->
+            <!-- 💡 不論有沒有原圖都強制渲染相框，沒原圖就原地秀出 AI 畫布 -->
             <div class="card-image-container" ${imgContainerStyle}>
                 <img src="${cardImgUrl}" class="card-image" alt="news thumbnail" loading="lazy" ${imgLoadAttr}>
                 ${!item.image ? `<div style="position:absolute; bottom:6px; right:6px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.55rem; padding:2px 6px; border-radius:4px; pointer-events:none;">🍌 AI 畫布</div>` : ''}
@@ -93,7 +93,7 @@ function renderCards(dataArray, append = false) {
             </div>
         `;
 
-        // 💡 🌟【微距緊湊優化版】：點擊詳細視窗 (秒開摘要 + 畫面強制置頂 + AI 智慧排版)
+        // 💡 🌟【微距緊湊優化版】：點擊詳細視窗 (秒開摘要 + 畫面強制置頂 + AI 智慧排版串流)
         cardElement.addEventListener("click", async () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;
@@ -158,29 +158,25 @@ function renderCards(dataArray, append = false) {
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
 
-                // 🚀 ✅ 完美大升級：解鎖前端 ReadableStream 串流讀取器與即時排版核心
+                // 🚀 ✅ 滿血大升級：解鎖前端 ReadableStream 串流打字機讀取核心
                 try {
                     const fetchUrl = `https://news-api.zhtttttt.workers.dev/?aiTitle=${encodeURIComponent(item.title)}&aiSnippet=${encodeURIComponent(item.snippet)}`;
                     const response = await fetch(fetchUrl);
                     
-                    // 🧙‍♂️ 建立數據串流管道讀取器
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder();
-                    let accumulatedText = ""; // 存放解碼後的純文字本體
-                    let rawBuffer = "";        // 存放未處理完的原始 JSON 碎片
+                    let accumulatedText = ""; 
+                    let rawBuffer = "";        
                     
                     const aiBox = document.getElementById('ai-response-box');
-                    if (aiBox) aiBox.innerHTML = ""; // 點開瞬間立刻清空原本的「載入中」提示
+                    if (aiBox) aiBox.innerHTML = ""; 
                     
-                    // 🔄 開啟無限迴圈，只要後端有噴碎片，前端就當場抓住！
                     while (true) {
                         const { done, value } = await reader.read();
-                        if (done) break; // 後端噴完了，功德圓滿退出迴圈
+                        if (done) break; 
                         
-                        // 拼接原始二進位制碎片
                         rawBuffer += decoder.decode(value, { stream: true });
                         
-                        // 🎯 賽博緩衝過濾器：用高精準 Regex 捕捉 Google 標準流中的 "text": "..." 欄位
                         const regex = /"text":\s*"((?:[^"\\]|\\.)*)"/g;
                         let match;
                         let lastIndex = 0;
@@ -188,21 +184,18 @@ function renderCards(dataArray, append = false) {
                         while ((match = regex.exec(rawBuffer)) !== null) {
                             let extractedTarget = match[1];
                             try {
-                                // 利用原生 JSON 解析器安全地將轉義字元（如 \n, \"）還原成實體文字
                                 accumulatedText += JSON.parse(`"${extractedTarget}"`);
                             } catch (e) {
-                                // 萬一遇到半路切斷的殘缺字元，使用防禦性替換備援
                                 accumulatedText += extractedTarget.replace(/\\n/g, '\n').replace(/\\"/g, '"');
                             }
                             lastIndex = regex.lastIndex;
                         }
                         
-                        // 🚀 關鍵優化：將已經處理過的安全字串切掉，緩衝區只保留可能被攔腰斬斷的末尾碎片
                         if (lastIndex > 0) {
                             rawBuffer = rawBuffer.slice(lastIndex);
                         }
                         
-                        // 🎨 🌟 即時排版大師：只要有新字跑出來，當場動態組裝 HTML 段落與粗體藍標題！
+                        // 🎨 🌟 即時排版大師：同步輸出 HTML 段落與粗體藍標題
                         if (aiBox && accumulatedText) {
                             const paragraphs = accumulatedText.split('\n\n');
                             const finalHtml = paragraphs.map(p => {
@@ -331,26 +324,49 @@ function filterAndRenderData() {
 }
 
 // ==========================================================================
-// 5. 模擬後端即時推播新資料
+// 5. 💡 🌟【真實對接更新】：每小時在背景連線一次 Worker 抓取真新聞
 // ==========================================================================
 function simulateLiveUpdates() {
-    setInterval(() => {
+    // 1小時 = 60分 * 60秒 * 1000毫秒 = 3,600,000 ms
+    setInterval(async () => {
         if (allSummaries.length === 0) return;
-        const randomIndex = Math.floor(Math.random() * allSummaries.length);
-        const baseItem = allSummaries[randomIndex];
-        const newItem = { ...baseItem, id: Date.now(), isNewData: true, time: "剛剛", title: `【即時】${baseItem.title}` };
-        allSummaries.unshift(newItem);
         
-        let matchFilter = true;
-        if (currentTag !== 'all' && newItem.tag !== currentTag) matchFilter = false;
-        if (searchQuery !== '') matchFilter = false; 
-        
-        if (matchFilter) {
-            currentFilteredData.unshift(newItem); unseenNewItems.push(newItem);
-            const badge = document.getElementById('new-data-badge');
-            if (badge && window.scrollY > 200) { badge.classList.remove('hidden'); }
+        const fetchUrl = `https://news-api.zhtttttt.workers.dev/?tag=${encodeURIComponent(currentTag)}`;
+        try {
+            const response = await fetch(fetchUrl);
+            if (!response.ok) return;
+            const freshNews = await response.json();
+            
+            let brandNewItems = [];
+            freshNews.forEach(newItem => {
+                // 🕵️‍♂️ 嚴格核對：檢查新抓進來的文章標題是否已經存在於目前的列表裡
+                const exists = allSummaries.some(oldItem => oldItem.title === newItem.title);
+                if (!exists) {
+                    newItem.isNewData = true;
+                    newItem.time = "剛剛"; // 標註為熱騰騰剛出爐的資訊
+                    brandNewItems.push(newItem);
+                }
+            });
+
+            // 📢 如果真的在世界線上有發現最新的實體 RSS 新聞，立刻在前端推播氣泡！
+            if (brandNewItems.length > 0) {
+                // 將新文章塞入記憶體陣列的最頂端
+                allSummaries = [...brandNewItems, ...allSummaries];
+                
+                // 優先在 currentFilteredData 最前方注入，並加進未讀緩衝區
+                brandNewItems.forEach(item => {
+                    currentFilteredData.unshift(item);
+                    unseenNewItems.push(item);
+                });
+
+                // 喚醒螢幕上方的「✨ 新推播」浮動通知氣泡
+                const badge = document.getElementById('new-data-badge');
+                if (badge) { badge.classList.remove('hidden'); }
+            }
+        } catch (e) {
+            console.error("背景每小時常規即時更新連線失敗", e);
         }
-    }, 12000); 
+    }, 3600000); 
 }
 
 // ==========================================================================
@@ -387,9 +403,7 @@ function setupEventListeners() {
         });
     }
 
-    // ==========================================================================
-    // 💡 🌟【終極返回頂部機制】：若有新推播，回到頂部時自動原地優雅重裝發牌！
-    // ==========================================================================
+    // 💡 🌟【終極返回頂部刷新核心】：點擊火箭或氣泡，原地重灌最新實體資訊
     const refreshToTopWithNewData = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         if (badge) badge.classList.add('hidden');
@@ -525,9 +539,8 @@ window.addEventListener('popstate', (event) => {
     if (settingsModal && !settingsModal.classList.contains('hidden')) { settingsModal.classList.add('hidden'); }
 });
 
-// 🚀 ✅ 完全體入口：載入資料、綁定事件，並正式在背景啟動即時更新模擬！
 document.addEventListener("DOMContentLoaded", () => {
     loadSummaryData();
     setupEventListeners();
-    simulateLiveUpdates(); 
+    simulateLiveUpdates(); // 正式在背景點火啟動每小時真實抓取核心！
 });

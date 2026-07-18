@@ -84,7 +84,7 @@ export default {
   }
 };
 
-// 🧙‍♂️ 終極強韌 XML 解析引擎
+// 🧙‍♂️ 終極強韌 XML 解析引擎 - 圖片解鎖版
 function parseRssToJSON(xmlText, sourceName, defaultTagName) {
   const items = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/g;
@@ -104,6 +104,19 @@ function parseRssToJSON(xmlText, sourceName, defaultTagName) {
     
     const pubDateMatch = itemContent.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
     const pubDate = pubDateMatch ? pubDateMatch[1] : "";
+
+    // 💡 🌟 核心新增：在清洗 HTML 標籤前，先把隱藏的圖片網址撈出來！
+    let imageUrl = "";
+    // 做法 1：從標準的 media:content 或 enclosure 標籤撈網址 (Yahoo 股市常用)
+    const mediaMatch = itemContent.match(/<(media:content|enclosure)[^>]+url=["']([^"']+)["']/);
+    // 做法 2：從 description 內嵌的 <img> 標籤撈 src (科技新報常用)
+    const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/);
+
+    if (mediaMatch) {
+      imageUrl = mediaMatch[2];
+    } else if (imgMatch) {
+      imageUrl = imgMatch[1];
+    }
 
     let timestamp = 0;
     let displayTime = "今日";
@@ -129,7 +142,8 @@ function parseRssToJSON(xmlText, sourceName, defaultTagName) {
       source: sourceName, 
       time: displayTime,
       link: link.trim(),
-      timestamp: timestamp 
+      timestamp: timestamp,
+      image: imageUrl // 💡 成功打包圖片網址，丟給前端的全新欄位！
     });
   }
   return items;

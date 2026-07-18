@@ -362,6 +362,65 @@ function setupEventListeners() {
             searchQuery.length > 0 ? clearSearchBtn.classList.remove('hidden') : clearSearchBtn.classList.add('hidden');
             filterAndRenderData();
         });
+            // ==========================================================================
+    // ⚙️ 設定彈窗與智慧跨平台分享控制邏輯
+    // ==========================================================================
+    const settingsModal = document.getElementById('settings-modal');
+    const settingsBtn = document.getElementById('settings-btn');
+    const shareBtn = document.getElementById('settings-share-btn');
+
+    if (settingsBtn && settingsModal) {
+        // 點擊齒輪 -> 打開設定彈窗 + 注入虛擬歷史紀錄
+        settingsBtn.addEventListener('click', () => {
+            settingsModal.classList.remove('hidden');
+            history.pushState({ modalOpen: true }, '');
+        });
+
+        // 點擊設定彈窗的 X 或者是背景遮罩 -> 觸發返回
+        const closeBtn = settingsModal.querySelector('.modal-close');
+        const overlay = settingsModal.querySelector('.modal-overlay');
+        const triggerSettingsBack = () => {
+            if (!settingsModal.classList.contains('hidden')) {
+                history.back();
+            }
+        };
+        if (closeBtn) closeBtn.addEventListener('click', triggerSettingsBack);
+        if (overlay) overlay.addEventListener('click', triggerSettingsBack);
+    }
+
+    // 🚀 核心：智慧跨平台分享按鈕
+    if (shareBtn) {
+        shareBtn.addEventListener('click', () => {
+            // 📱 偵測：如果環境支援手機原生分享 (如 LINE、FB、原生分享面板)
+            if (navigator.share) {
+                navigator.share({
+                    title: '摘要牆 - 門市高效資訊流',
+                    text: '來看全台最速、交叉打散排版的即時摘要牆！',
+                    url: window.location.href
+                })
+                .then(() => console.log('原生分享成功'))
+                .catch((err) => console.log('取消分享', err));
+            } else {
+                // 💻 備援：不支援原生的電腦版瀏覽器，一秒執行剪貼簿自動複製
+                navigator.clipboard.writeText(window.location.href)
+                    .then(() => {
+                        // 視覺優化：動態改變按鈕文字作為成功反饋，比死板的 alert 漂亮十倍
+                        const originalText = shareBtn.innerHTML;
+                        shareBtn.style.backgroundColor = '#34a853'; // 變綠色
+                        shareBtn.innerHTML = '✅ 網址已成功複製！';
+                        
+                        setTimeout(() => {
+                            shareBtn.style.backgroundColor = '';
+                            shareBtn.innerHTML = originalText;
+                        }, 2000);
+                    })
+                    .catch(() => {
+                        alert('複製失敗，請手動複製網址：' + window.location.href);
+                    });
+            }
+        });
+    }
+
     }
 
     if (clearSearchBtn) {

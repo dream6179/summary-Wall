@@ -18,6 +18,7 @@
                 <input type="text" id="search-input" placeholder="搜尋摘要標題、內容或來源...">
                 <button id="clear-search" class="hidden">&times;</button>
             </div>
+        </div> <!-- 👈 就是這裡！原本漏掉它了，記得補上來 -->
 
         <!-- 主題篩選分頁標籤列 -->
         <div class="filter-tabs-wrapper">
@@ -32,20 +33,20 @@
         </div>
     </header>
 
-        <!-- 中間卡片瀑布流區域 -->
+    <!-- 中間卡片瀑布流區域 -->
     <main class="wall-wrapper">
         <div id="wall-container" class="wall-grid">
             <!-- 卡片會塞在這裡 -->
         </div>
         
-        <!-- 💡 新增這行：作為無限滾動的底部觸發點 (Sentinel) -->
+        <!-- 作為無限滾動的底部觸發點 (Sentinel) -->
         <div id="sentinel" class="loading-text hidden">
             <span class="pulse-icon" style="display:inline-block; margin-right:8px;"></span>
             正在載入更多摘要...
         </div>
     </main>
 
-    <!-- 💡 新增：帶有紅點提示的懸浮回到頂部按鈕 -->
+    <!-- 帶有紅點提示的懸浮回到頂部按鈕 -->
     <button id="back-to-top" class="btt-btn hidden" title="回到頂部">
         <svg viewBox="0 0 24 24" width="24" height="24">
             <path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z" fill="currentColor"/>
@@ -57,4 +58,3 @@
     <script src="app.js"></script>
 </body>
 </html>
-

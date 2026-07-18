@@ -88,7 +88,7 @@ function renderCards(dataArray, append = false) {
             </div>
         `;
 
-        // 💡 🌟 核心進化：動態延遲雙軌彈出視窗
+        // 💡 🌟 【核心雙軌優化】：點擊秒開原始摘要，下方動態生成 AI 專家導讀
         cardElement.addEventListener("click", async () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;
@@ -98,43 +98,67 @@ function renderCards(dataArray, append = false) {
             document.getElementById('modal-source').textContent = item.source;
             document.getElementById('modal-time').textContent = item.time;
             
-            // 骨架建立
             let modalImageHtml = item.image ? `<div class="modal-image-container"><img src="${item.image}" class="modal-image" alt="modal img"></div>` : '';
             let modalLinkHtml = item.link ? `<div style="margin-top: 24px; text-align: center;"><a href="${item.link}" target="_blank" style="display:inline-block; padding: 10px 20px; background-color: var(--accent-color); color: white; text-decoration: none; border-radius: 8px; font-size: 0.9rem;">閱讀原文</a></div>` : '';
 
-            // 🚀 防禦機制：如果是廣告（ad-）、推廣（promo-）或測試檔案（test-），它們內文早就在本地寫好了，免爬、直接秒開！
+            // 🚀 1. 判斷如果是店長推薦、廣告或測試卡片，直接顯示原有摘要，不發起 AI 請求
             if (item.id.includes('ad-') || item.id.includes('promo-') || item.id.includes('test-')) {
-                document.getElementById('modal-snippet').innerHTML = `${modalImageHtml}<p>${escapeHtml(item.snippet)}</p>${modalLinkHtml}`;
+                document.getElementById('modal-snippet').innerHTML = `${modalImageHtml}<p style="font-size:1.05rem; line-height:1.7; color:var(--text-main); margin-bottom:16px;">${escapeHtml(item.snippet)}</p>${modalLinkHtml}`;
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
             } else {
-                // 📰 如果是外部真實新聞，先開啟視窗並展示極具質感的「動態載入小火箭動畫」
+                // 🚀 2. 如果是外部常規新聞：【秒開摘要】+【注入動態 AI 導讀面板 + 醒目錯誤免責說明】
                 document.getElementById('modal-snippet').innerHTML = `
                     ${modalImageHtml}
-                    <div style="text-align:center; padding: 40px 20px; color: var(--text-muted);">
-                        <span style="display:inline-block; font-size:1.8rem; margin-bottom:12px; animation: badgePulse 1.6s infinite;">🚀</span>
-                        <p style="font-size:0.95rem; font-weight:500; letter-spacing:0.5px;">AI 正在為您遠端連線、擷取即時長文...</p>
+                    <!-- 💡 第一層：真實原始新聞摘要 (立刻看見，體感秒開) -->
+                    <p style="font-size:1.05rem; line-height:1.7; color:var(--text-main); margin-bottom: 24px;">
+                        ${escapeHtml(item.snippet)}
+                    </p>
+                    
+                    <!-- 💡 第二層：高質感 AI 智慧導讀面板 (自帶靜態免責聲明) -->
+                    <div id="modal-ai-panel" style="background-color: #f4f8ff; border: 1px solid #e1eefd; border-left: 4px solid var(--accent-color); padding: 18px; border-radius: 12px; margin-bottom: 20px; white-space: normal;">
+                        <h4 style="color: var(--accent-color); margin-bottom: 10px; font-size: 1rem; display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size:1.2rem;">🧠</span> AI 專家即時趨勢剖析
+                        </h4>
+                        
+                        <!-- AI 文字輸出區 (預設放置精美載入動畫) -->
+                        <div id="ai-response-box" style="font-size: 0.95rem; color: #3c4043; line-height: 1.6;">
+                            <span style="display:inline-block; animation: badgePulse 1.6s infinite; margin-right: 6px;">⚡</span> 門市 AI 智囊團正在線上進行數據剖析與衍生解讀...
+                        </div>
+                        
+                        <!-- ⚠️ 完美落實：AI 錯誤免責聲明說明 -->
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 14px; border-top: 1px dashed #dadce0; padding-top: 10px; line-height: 1.4;">
+                            ⚠️ <strong style="color:#e04040;">模組提示：</strong>本評論區塊由大語言模型自動產出。內容係基於新聞標題進行趨勢推演與市場解讀，僅供輔助參考。AI 評論具有潛在幻覺風險，可能包含非當下實際發生的錯誤數據，請以官方真實公告為準。
+                        </div>
                     </div>
+                    
+                    ${modalLinkHtml}
                 `;
+                
+                // 瞬間拉開視窗
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
 
+                // 🚀 3. 非同步向後端發起 AI 導讀請求，載入完成後瞬間抽換文字，完全不卡網頁
                 try {
-                    // 非同步向後端發起單篇網頁爬取請求
-                    const fetchUrl = `https://news-api.zhtttttt.workers.dev/?fetchUrl=${encodeURIComponent(item.link)}`;
+                    const fetchUrl = `https://news-api.zhtttttt.workers.dev/?aiTitle=${encodeURIComponent(item.title)}&aiSnippet=${encodeURIComponent(item.snippet)}`;
                     const response = await fetch(fetchUrl);
-                    const fullText = await response.text();
+                    const aiCommentary = await response.text();
                     
-                    // 爬取成功，瞬間抽換，千字長文完美噴發！
-                    document.getElementById('modal-snippet').innerHTML = `${modalImageHtml}<p>${escapeHtml(fullText)}</p>${modalLinkHtml}`;
+                    const aiBox = document.getElementById('ai-response-box');
+                    if (aiBox) {
+                        aiBox.textContent = aiCommentary;
+                    }
                 } catch (error) {
-                    // 降級備援：萬一網路全斷，拿原本列表的 120 字撐著，絕不讓畫面死掉
-                    document.getElementById('modal-snippet').innerHTML = `${modalImageHtml}<p>${escapeHtml(item.snippet)} (線上長文擷取失敗)</p>${modalLinkHtml}`;
+                    const aiBox = document.getElementById('ai-response-box');
+                    if (aiBox) {
+                        aiBox.textContent = "AI 智囊團目前連線逾時，請點擊下方閱讀原文按鈕查看完整內容。";
+                    }
                 }
             }
         });
 
-        // 內部按鈕綁定
+        // 內部按鈕防冒泡綁定
         const moreBtn = cardElement.querySelector('.card-more-btn');
         const menu = cardElement.querySelector('.more-menu');
         const dislikeBtn = cardElement.querySelector('.btn-dislike');

@@ -93,14 +93,12 @@ function renderCards(dataArray, append = false) {
             </div>
         `;
 
-        // 點擊詳細視窗 (保持原汁原味的秒開摘要 + 點擊後不重複生圖)
-        // 💡 🌟【微距緊湊優化版】：點擊秒開原始摘要，強制重設瀏覽器預設邊距
-        // 💡 🌟【微距緊湊優化版】：點擊秒開原始摘要，強制重設瀏覽器預設邊距
+        // 💡 🌟【微距緊湊優化版】：點擊詳細視窗 (秒開摘要 + 畫面強制置頂 + AI 智慧排版)
         cardElement.addEventListener("click", async () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;
             
-            // 🚀【終極救磚：置頂魔術】：每次一打開，不管三七二十一，強制所有滾動容器全部滾回最頂端！
+            // 🚀【置頂魔術】：每次一打開，強制所有滾動容器全部滾回最頂端！
             modal.scrollTop = 0; 
             const modalContent = modal.querySelector('.modal-content');
             if (modalContent) modalContent.scrollTop = 0;
@@ -112,21 +110,19 @@ function renderCards(dataArray, append = false) {
             document.getElementById('modal-source').textContent = item.source;
             document.getElementById('modal-time').textContent = item.time;
             
-            // 🍌 圖片相框：將底部的間距縮小到 12px，並加上 border-radius 防止破版
+            // 🍌 圖片相框：保持外部與內部網址完全一致，完美觸發瀏覽器快取
             let modalImageHtml = '';
             if (item.image) {
                 modalImageHtml = `<div class="modal-image-container" style="margin: 0 0 12px 0; border-radius: 8px; overflow: hidden; display: block;"><img src="${item.image}" class="modal-image" alt="modal img" style="width:100%; display:block; object-fit:cover;"></div>`;
             } else {
-                const bananaGenUrl = `https://news-api.zhtttttt.workers.dev/?aiImageTitle=${encodeURIComponent(item.title)}`;
                 modalImageHtml = `
                     <div class="modal-image-container" style="background-color:#f1f3f4; position:relative; animation: badgePulse 2s infinite; margin: 0 0 12px 0; border-radius:8px; overflow:hidden; aspect-ratio: 16/9;">
-                        <img src="${bananaGenUrl}" class="modal-image" alt="Banana Gen Art" style="width:100%; height:100%; object-fit:cover; display:block;" onload="this.parentElement.style.animation='none'">
+                        <img src="${cardImgUrl}" class="modal-image" alt="Banana Gen Art" style="width:100%; height:100%; object-fit:cover; display:block;" onload="this.parentElement.style.animation='none'">
                         <div style="position:absolute; bottom:6px; right:6px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.55rem; padding:2px 6px; border-radius:4px; pointer-events:none;">🍌 奈米香蕉 AI 畫布</div>
                     </div>
                 `;
             }
 
-            // 閱讀原文按鈕：微調頂部間距為 14px 即可
             let modalLinkHtml = item.link ? `<div style="margin: 14px 0 0 0; text-align: center; padding: 0;"><a href="${item.link}" target="_blank" style="display:inline-block; padding: 8px 20px; background-color: var(--accent-color); color: white; text-decoration: none; border-radius: 6px; font-size: 0.85rem; font-weight: 500; letter-spacing: 0.5px;">閱讀原文</a></div>` : '';
 
             if (item.id.includes('ad-') || item.id.includes('promo-') || item.id.includes('test-')) {
@@ -134,29 +130,23 @@ function renderCards(dataArray, append = false) {
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
             } else {
-                // 📰 正常新聞版面：徹底拔除所有預設 margin (設為 0)，完全由我們精準配給間距
+                // 📰 正常新聞版面
                 document.getElementById('modal-snippet').innerHTML = `
                     ${modalImageHtml}
                     
-                    <!-- 💡 新聞摘要區：強制 margin: 0 0 14px 0，拒絕瀏覽器預設拉開 -->
                     <p style="font-size: 1rem; line-height: 1.6; color: var(--text-main); margin: 0 0 14px 0; padding: 0; white-space: pre-wrap;">
                         ${escapeHtml(item.snippet)}
                     </p>
                     
-                    <!-- 💡 AI 面板區：margin: 0 0 12px 0 緊咬上方的摘要 -->
                     <div id="modal-ai-panel" style="background-color: #f4f8ff; border: 1px solid #e1eefd; border-left: 4px solid var(--accent-color); padding: 12px 14px; border-radius: 10px; margin: 0 0 12px 0; white-space: normal;">
-                        
-                        <!-- 標題部分強制 margin 歸零 -->
                         <h4 style="color: var(--accent-color); margin: 0 0 6px 0; padding: 0; font-size: 0.95rem; display: flex; align-items: center; gap: 6px; font-weight: 600;">
                             <span style="font-size:1.1rem;">🧠</span> Gemini 核心即時趨勢剖析
                         </h4>
                         
-                        <!-- 回傳文字區強制 margin 歸零 -->
                         <div id="ai-response-box" style="font-size: 0.92rem; color: #3c4043; line-height: 1.55; margin: 0; padding: 0;">
                             <span style="display:inline-block; animation: badgePulse 1.6s infinite; margin-right: 6px;">⚡</span> AI正在線上進行數據剖析與衍生解讀...
                         </div>
                         
-                        <!-- 免責聲明：稍微調緊頂部間距 -->
                         <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; border-top: 1px dashed #dadce0; padding-top: 8px; line-height: 1.4;">
                             ⚠️ <strong>模組提示：</strong>本區塊由 AI 自動產出，注意潛在幻覺風險，請以官方公告為準。
                         </div>
@@ -168,7 +158,7 @@ function renderCards(dataArray, append = false) {
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
 
-                // 🚀 ✅ 換上這段：自動幫 AI 斷句、包裝段落與粗體標題
+                // 🚀 呼叫後端解禁的 Gemini 3.5 Flash 戰略長大腦
                 try {
                     const fetchUrl = `https://news-api.zhtttttt.workers.dev/?aiTitle=${encodeURIComponent(item.title)}&aiSnippet=${encodeURIComponent(item.snippet)}`;
                     const response = await fetch(fetchUrl);
@@ -176,21 +166,14 @@ function renderCards(dataArray, append = false) {
                     
                     const aiBox = document.getElementById('ai-response-box');
                     if (aiBox) {
-                        // 🧙‍♂️ 賽博排版大師：依據 AI 的雙換行符號，切成真正的 HTML 段落陣列
+                        // 🧙‍♂️ 賽博排版大師：完美切分段落並渲染粗體 <strong> 小標題
                         const paragraphs = aiCommentary.split('\n\n');
-                        
                         const finalHtml = paragraphs.map(p => {
                             if (!p.trim()) return '';
-                            // 先進行安全轉義（防破版），再把 AI 產生的 **標題** 抽換成實體 <strong> 標籤
-                            let cleanText = escapeHtml(p.trim()).replace(/\*\*(.*?)\*\//g, '<strong>$1</strong>');
-                            
-                            // 有時候 AI 結尾會帶有多餘的粗體未閉合，加做一層萬能雙星號安全交叉防護
-                            cleanText = cleanText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                            
+                            let cleanText = escapeHtml(p.trim()).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                             return `<p>${cleanText}</p>`;
                         }).join('');
                         
-                        // 完美的把排版好的乾淨 HTML 灌入面板
                         aiBox.innerHTML = finalHtml;
                     }
                 } catch (error) {
@@ -199,6 +182,7 @@ function renderCards(dataArray, append = false) {
                         aiBox.innerHTML = `<p>AI 智囊團目前連線逾時，請點擊下方閱讀原文按鈕查看完整內容。</p>`;
                     }
                 }
+            }
         });
 
         // 按鈕監聽防冒泡
@@ -470,7 +454,9 @@ window.addEventListener('popstate', (event) => {
     if (settingsModal && !settingsModal.classList.contains('hidden')) { settingsModal.classList.add('hidden'); }
 });
 
+// 🚀 ✅ 完全體入口：載入資料、綁定事件，並正式在背景啟動即時更新模擬！
 document.addEventListener("DOMContentLoaded", () => {
     loadSummaryData();
     setupEventListeners();
+    simulateLiveUpdates(); 
 });

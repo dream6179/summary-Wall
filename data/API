@@ -12,7 +12,9 @@ export default {
 
     const { searchParams } = new URL(request.url);
     
-    // 🎨【官方原生免憑證：動態繪圖路由】：利用 Stable Diffusion 現場高流速作畫
+    // ==========================================================================
+    // 🎨【動態繪圖路由】：利用 Stable Diffusion 現場高流速作畫
+    // ==========================================================================
     const aiImageTitle = searchParams.get('aiImageTitle');
     if (aiImageTitle) {
       try {
@@ -20,26 +22,49 @@ export default {
           prompt: `A sleek, modern corporate digital illustration representing: ${aiImageTitle}. Minimalist concept art, bright tech lighting, clean corporate style, 16:9 aspect ratio`,
         });
         return new Response(imgResponse, {
-          headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400", ...corsHeaders }
+          headers: { 
+            "Content-Type": "image/png", 
+            "Cache-Control": "public, max-age=86400", 
+            ...corsHeaders 
+          }
         });
       } catch (imgError) {
+        // 備援機制：AI 罷工時回傳 1x1 透明 GIF 圖片，防前端瀑布流破版
         const transparentPixel = new Uint8Array([71,73,70,56,57,97,1,0,1,0,128,0,0,0,0,0,255,255,255,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59]);
         return new Response(transparentPixel, { headers: { "Content-Type": "image/gif", ...corsHeaders } });
       }
     }
 
-    // 🧠【💡 完美直驅：Google Gemini 3.5 Flash 官方原廠路由】
+    // ==========================================================================
+    // 🧠【Gemini 3.5 Flash 官方串流 + 賽博 KV 記憶體盾牌版】
+    // ==========================================================================
     const aiTitle = searchParams.get('aiTitle');
     const aiSnippet = searchParams.get('aiSnippet');
     if (aiTitle) {
-      // 防禦機制：確保你有在後台好好設定金鑰
       if (!env.GEMINI_API_KEY) {
         return new Response("系統提示：請先至 Cloudflare 後台設定 GEMINI_API_KEY 環境變數。", { headers: corsHeaders });
       }
 
       try {
-        // 🚀 降維打擊：直接 fetch Google 官方終端節點，帶入你的專屬金鑰
-        const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${env.GEMINI_API_KEY}`;
+        // 🛡️ 🌟【KV 盾牌防線 A】：利用新聞標題產生專屬的快取 Key
+        const cacheKey = "ai_summary:" + encodeURIComponent(aiTitle).substring(0, 150);
+        
+        // 如果環境有成功綁定 KV，先去全球記憶體裡翻底牌
+        if (env.NEWS_CACHE_KV) {
+          const cachedPayload = await env.NEWS_CACHE_KV.get(cacheKey);
+          if (cachedPayload) {
+            console.log("🎯 完美命中邊緣 KV 快取！秒回防爆額度，一滴 Gemini 流量都沒浪費！");
+            return new Response(cachedPayload, {
+              headers: { 
+                "Content-Type": "text/plain; charset=utf-8",
+                "X-Content-Type-Options": "nosniff",
+                ...corsHeaders 
+              }
+            });
+          }
+        }
+
+        const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?key=${env.GEMINI_API_KEY}`;
         
         const googleResponse = await fetch(geminiApiUrl, {
           method: "POST",
@@ -51,11 +76,9 @@ export default {
                 parts: [{ text: `新聞標題：${aiTitle}\n基本摘要：${aiSnippet}` }] 
               }
             ],
-            // 💡 🌟【純粹戰略大腦】：去除了繁瑣的硬性格式，釋放頂級分析師的寫作自由度
             systemInstruction: {
-              parts: [{ text: "你是一位精通全球科技趨勢、數位市場與網通產業的頂尖物聯網首席戰略分析師。請針對使用者提供的新聞標題與摘要，進行最嚴密、最深入的市場推演，產出一篇結構宏大、字數約 500 到 800 字的報告本體，不要帶有任何開場白或過渡寒暄。" }]
+              parts: [{ text: "你是一位精通全球科技趨勢、數位市場與網通產業的頂尖物聯網首席戰略分析師。請針對使用者提供的新聞標題與摘要，進行最嚴密、最深入的市場推演，產篇結構宏大、字數約 500 到 800 字的報告本體，不要帶有任何開場白或過渡寒暄。請務必善用「**關鍵字標題**」為論述分段，並在段落之間使用雙換行（\\n\\n）拉開結構。" }]
             },
-            // 💡 🌟【頂規輸出頻寬】：直衝 2048 Tokens，保障千字長文完整流暢傾瀉
             generationConfig: {
               maxOutputTokens: 2048,
               temperature: 0.75
@@ -68,26 +91,60 @@ export default {
           throw new Error(errorData.error?.message || `Google API 回傳錯誤: ${googleResponse.status}`);
         }
 
-        const geminiData = await googleResponse.json();
+        // 🧙‍♂️ 💥【核心黑科技：串流背景即時錄製大師】
+        // 利用 TransformStream 建立一條雙向分流管線：文字一邊噴給第一位客人看，後台一邊錄製存進 KV
+        const { readable, writable } = new TransformStream();
+        const writer = writable.getWriter();
+        const reader = googleResponse.body.getReader();
+        const decoder = new TextDecoder();
         
-        // 精準抽離 Google Gemini 標準 JSON 結構中的文字本體
-        let aiResultText = "";
-        if (geminiData.candidates && geminiData.candidates[0]?.content?.parts[0]?.text) {
-          aiResultText = geminiData.candidates[0].content.parts[0].text.trim();
-        } else {
-          aiResultText = "無法解析 AI 回傳結構，請參考上方摘要。";
-        }
+        // 用 ctx.waitUntil 讓 Cloudflare 在背景默默處理，絕不拖慢當下客人的網速
+        ctx.waitUntil((async () => {
+          let accumulatedBody = "";
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) {
+                writer.close();
+                // 錄製完畢！完美存入 KV 的口袋，設定自動過期時間為 720 小時（2592000 秒）
+                if (env.NEWS_CACHE_KV && accumulatedBody) {
+                  await env.NEWS_CACHE_KV.put(cacheKey, accumulatedBody, { expirationTtl: 2592000 });
+                  console.log("💾 錄製功德圓滿，報告成功打包存入全球 KV 口袋！");
+                }
+                break;
+              }
+              // 記錄軌道碎片
+              accumulatedBody += decoder.decode(value, { stream: true });
+              // 同步放行放流
+              await writer.write(value);
+            }
+          } catch (streamError) {
+            console.error("串流錄製中斷:", streamError);
+            writer.abort(streamError);
+          }
+        })());
 
-        return new Response(aiResultText, { headers: { "Content-Type": "text/plain; charset=utf-8", ...corsHeaders } });
+        // 回傳這條正在即時一邊錄製、一邊放流的特殊管道
+        return new Response(readable, {
+          headers: { 
+            "Content-Type": "text/plain; charset=utf-8",
+            "X-Content-Type-Options": "nosniff",
+            "Connection": "keep-alive",
+            ...corsHeaders 
+          }
+        });
 
       } catch (aiError) {
         return new Response(`分析暫時無法載入（${aiError.message}），請參考上方摘要或點擊下方閱讀原文。`, { headers: { "Content-Type": "text/plain; charset=utf-8", ...corsHeaders } });
       }
     }
 
+    // ==========================================================================
     // 📰 【常規路由】：輕量級 RSS 智慧混流發牌 (中央社、科技新報、Yahoo股市)
+    // ==========================================================================
     const currentTag = searchParams.get('tag') || 'all';
     const browserHeader = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" };
+    
     const sources = {
       "cna": { url: "https://feeds.feedburner.com/cnaFirstNews", name: "中央通訊社", tag: "焦點新聞" },
       "tech": { url: "https://technews.tw/feed/", name: "科技新報 TechNews", tag: "科技新知" },
@@ -106,42 +163,56 @@ export default {
             return parseRssToJSON(xml, sources[key].name, sources[key].tag);
           } catch (e) { return []; }
         });
+        
         const results = await Promise.all(fetchPromises);
         const maxLength = Math.max(...results.map(arr => arr.length));
+        
+        // 🧙‍♂️ 賽博交錯發牌演算法：確保四大新聞源完美穿插，視覺體驗極佳
         for (let i = 0; i < maxLength; i++) {
-          for (let j = 0; j < results.length; j++) { if (results[j][i]) finalItems.push(results[j][i]); }
+          for (let j = 0; j < results.length; j++) { 
+            if (results[j][i]) finalItems.push(results[j][i]); 
+          }
         }
       } else {
-        let selected = sources.cna; 
+        let selected = sources.cna;
         if (currentTag === "遊戲情報" || currentTag === "game") { selected = sources.game; }
         else if (currentTag === "科技新知" || currentTag === "tech") { selected = sources.tech; }
         else if (currentTag === "財經新聞" || currentTag === "stock") { selected = sources.stock; }
+        
         const response = await fetch(selected.url, { headers: browserHeader });
         if (!response.ok) throw new Error(`${selected.name} 伺服器異常`);
         const xmlText = await response.text();
         finalItems = parseRssToJSON(xmlText, selected.name, selected.tag);
       }
+      
       if (finalItems.length > 0) finalItems.forEach((item, index) => item.isFeatured = (index === 0));
       return new Response(JSON.stringify(finalItems), { headers: { "Content-Type": "application/json; charset=utf-8", ...corsHeaders } });
+    
     } catch (error) {
       return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
     }
   }
 };
 
-// 🧙‍♂️ 輕量 RSS 解析器
+// ==========================================================================
+// 🧙‍♂️ 輕量級安全 Regex RSS 解析器
+// ==========================================================================
 function parseRssToJSON(xmlText, sourceName, defaultTagName) {
   const items = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/g;
   let match;
+  
   while ((match = itemRegex.exec(xmlText)) !== null) {
     const itemContent = match[1];
     const titleMatch = itemContent.match(/<title>[\s\S]*?(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]+))[\s\S]*?<\/title>/);
     let title = titleMatch ? (titleMatch[1] || titleMatch[2] || "") : "";
+    
     const linkMatch = itemContent.match(/<link>[\s\S]*?(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]+))[\s\S]*?<\/link>/);
     let link = linkMatch ? (linkMatch[1] || linkMatch[2] || "") : "";
+    
     const descMatch = itemContent.match(/<description>[\s\S]*?(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]+))[\s\S]*?<\/description>/);
     let description = descMatch ? (descMatch[1] || descMatch[2] || "") : "";
+    
     const pubDateMatch = itemContent.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
     const pubDate = pubDateMatch ? pubDateMatch[1] : "";
 
@@ -150,19 +221,31 @@ function parseRssToJSON(xmlText, sourceName, defaultTagName) {
     const imgMatch = itemContent.match(/<img[^>]+src=["']([^"']+)["']/i);
     if (mediaMatch) imageUrl = mediaMatch[2]; else if (imgMatch) imageUrl = imgMatch[1];
 
-    let timestamp = 0; let displayTime = "今日";
+    let timestamp = 0; 
+    let displayTime = "今日";
     if (pubDate) {
       try {
         const dateObj = new Date(pubDate.trim());
-        if (!isNaN(dateObj.getTime())) { timestamp = dateObj.getTime(); displayTime = dateObj.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false }); }
+        if (!isNaN(dateObj.getTime())) { 
+          timestamp = dateObj.getTime(); 
+          displayTime = dateObj.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false }); 
+        }
       } catch (e) {}
     }
+    
     const cleanSnippet = description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
     items.push({
       id: `news-${Math.random().toString(36).substring(2, 9)}`,
-      tag: defaultTagName, isFeatured: false, isImportant: items.length < 2,
-      title: title.trim(), snippet: cleanSnippet.substring(0, 120) + (cleanSnippet.length > 120 ? "..." : ""), 
-      source: sourceName, time: displayTime, link: link.trim(), timestamp: timestamp, image: imageUrl 
+      tag: defaultTagName, 
+      isFeatured: false, 
+      isImportant: items.length < 2,
+      title: title.trim(), 
+      snippet: cleanSnippet.substring(0, 120) + (cleanSnippet.length > 120 ? "..." : ""),
+      source: sourceName, 
+      time: displayTime, 
+      link: link.trim(), 
+      timestamp: timestamp, 
+      image: imageUrl
     });
   }
   return items;

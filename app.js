@@ -159,24 +159,56 @@ function renderCards(dataArray, append = false) {
                 history.pushState({ modalOpen: true }, '');
 
                 // 🚀 ✅ 滿血大升級：解鎖前端 ReadableStream 串流打字機讀取核心
+                // 🚀 ✅ 終極相容大升級：解鎖前端 ReadableStream 串流讀取器（自帶 iOS 閹割 WebView 降級防禦）
                 try {
                     const fetchUrl = `https://news-api.zhtttttt.workers.dev/?aiTitle=${encodeURIComponent(item.title)}&aiSnippet=${encodeURIComponent(item.snippet)}`;
                     const response = await fetch(fetchUrl);
                     
+                    const aiBox = document.getElementById('ai-response-box');
+                    if (aiBox) aiBox.innerHTML = ""; // 點開瞬間立刻清空提示
+                    
+                    // 🧙‍♂️ 賽博通用渲染組裝濾網（抽離成獨立邏輯，方便雙軌共用）
+                    const renderAiOutput = (text) => {
+                        if (!aiBox || !text) return;
+                        const paragraphs = text.split('\n\n');
+                        const finalHtml = paragraphs.map(p => {
+                            if (!p.trim()) return '';
+                            let cleanText = escapeHtml(p.trim()).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                            return `<p>${cleanText}</p>`;
+                        }).join('');
+                        aiBox.innerHTML = finalHtml;
+                    };
+
+                    // 🚨 💥【iPhone 降級防禦核心】：如果遇到 iOS 內嵌瀏覽器封鎖了 body 串流
+                    if (!response.body || typeof response.body.getReader !== 'function') {
+                        console.log("偵測到 iPhone WebView 限制環境，啟動高速全量加載安全通道...");
+                        const fullText = await response.text(); // 暴力直接讀取整包文字
+                        
+                        let accumulatedFallbackText = "";
+                        const fallbackRegex = /"text":\s*"((?:[^"\\]|\\.)*)"/g;
+                        let fallbackMatch;
+                        
+                        while ((fallbackMatch = fallbackRegex.exec(fullText)) !== null) {
+                            let extracted = fallbackMatch[1];
+                            try { accumulatedFallbackText += JSON.parse(`"${extracted}"`); } 
+                            catch (e) { accumulatedFallbackText += extracted.replace(/\\n/g, '\n').replace(/\\"/g, '"'); }
+                        }
+                        
+                        renderAiOutput(accumulatedFallbackText); // 瞬間一次到位渲染，絕不卡死！
+                        return; // 完美功德圓滿，安全退出
+                    }
+
+                    // 🔄 常規高速軌道：適用於支援標準 WebStream 的現代瀏覽器 (桌機、Android、原生 Safari)
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder();
                     let accumulatedText = ""; 
                     let rawBuffer = "";        
-                    
-                    const aiBox = document.getElementById('ai-response-box');
-                    if (aiBox) aiBox.innerHTML = ""; 
                     
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) break; 
                         
                         rawBuffer += decoder.decode(value, { stream: true });
-                        
                         const regex = /"text":\s*"((?:[^"\\]|\\.)*)"/g;
                         let match;
                         let lastIndex = 0;
@@ -195,16 +227,8 @@ function renderCards(dataArray, append = false) {
                             rawBuffer = rawBuffer.slice(lastIndex);
                         }
                         
-                        // 🎨 🌟 即時排版大師：同步輸出 HTML 段落與粗體藍標題
-                        if (aiBox && accumulatedText) {
-                            const paragraphs = accumulatedText.split('\n\n');
-                            const finalHtml = paragraphs.map(p => {
-                                if (!p.trim()) return '';
-                                let cleanText = escapeHtml(p.trim()).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                                return `<p>${cleanText}</p>`;
-                            }).join('');
-                            
-                            aiBox.innerHTML = finalHtml;
+                        if (accumulatedText) {
+                            renderAiOutput(accumulatedText); // 邊跑邊打字排版
                         }
                     }
                 } catch (error) {
@@ -213,8 +237,6 @@ function renderCards(dataArray, append = false) {
                         aiBox.innerHTML = `<p>AI 智囊團目前連線外洩或逾時，請點擊下方閱讀原文按鈕查看完整內容。</p>`;
                     }
                 }
-            }
-        });
 
         // 按鈕監聽防冒泡
         const moreBtn = cardElement.querySelector('.card-more-btn');

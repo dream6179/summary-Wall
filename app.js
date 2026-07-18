@@ -105,7 +105,7 @@ function renderCards(dataArray, append = false) {
             document.getElementById('modal-source').textContent = item.source;
             document.getElementById('modal-time').textContent = item.time;
             
-            // 🖼️ 彈出視窗大圖解鎖：將圖片與內文完美合體
+            // 彈出視窗大圖組裝
             let modalBodyHtml = '';
             if (item.image) {
                 modalBodyHtml += `
@@ -124,7 +124,11 @@ function renderCards(dataArray, append = false) {
             
             document.getElementById('modal-snippet').innerHTML = modalBodyHtml;
             modal.classList.remove('hidden');
+
+            // 💡 🌟 核心修正：打開彈窗時，往瀏覽器歷史紀錄推一個虛擬狀態，標記彈窗現在開著
+            history.pushState({ modalOpen: true }, '');
         });
+
 
         // 節點綁定與事件防冒泡
         const moreBtn = cardElement.querySelector('.card-more-btn');

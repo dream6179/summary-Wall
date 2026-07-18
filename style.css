@@ -558,3 +558,21 @@ body {
     display: block;         /* 💡 防禦屬性：確保圖片以塊級元素渲染，不殘留任何底部的基線白邊 */
 }
 
+/* ==========================================================================
+   終極視覺淨化：徹底隱藏彈窗圓角框的萬惡白條（保留滾動功能）
+   ========================================================================== */
+
+/* 1. 針對 Firefox 以及舊版 Edge/IE */
+#article-modal,
+#article-modal .modal-content,
+#modal-snippet {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;     /* Firefox */
+}
+
+/* 2. 針對 Chrome, Safari, Opera, 以及你手機的 Samsung Internet / 瀏覽器核心 */
+#article-modal::-webkit-scrollbar,
+#article-modal .modal-content::-webkit-scrollbar,
+#modal-snippet::-webkit-scrollbar {
+    display: none !important;  /* 暴力隱藏 Webkit 核心的捲軸本體 */
+}

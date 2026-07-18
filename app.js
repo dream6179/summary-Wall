@@ -342,25 +342,37 @@ function escapeHtml(string) {
 
 async function loadSummaryData() {
     const container = document.getElementById("wall-container");
+    
+    // 💡 萬流歸宗：永遠只呼叫這條唯一 Worker，並用 URL 參數動態帶入當前標籤
+    const fetchUrl = `https://news-api.zhtttttt.workers.dev/?tag=${encodeURIComponent(currentTag)}`;
+
     try {
-        // 🚀 請確認此網址與你測試成功的 Worker 網址一致
-        const response = await fetch('https://news-api.zhtttttt.workers.dev/');
-        
+        const response = await fetch(fetchUrl);
         if (!response.ok) throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`);
         
         allSummaries = await response.json();
         
-        filterAndRenderData();   
-        setupInfiniteScroll();   
-        simulateLiveUpdates();   
+        // 後端已經精準幫我們過濾好該分類的新聞了，前端直接接管渲染與無限滾動
+        currentFilteredData = allSummaries;
+        renderedCount = 0;
+        unseenNewItems = [];
+        
+        if (container) container.innerHTML = ""; 
+        const sentinel = document.getElementById('sentinel');
+        if (sentinel) sentinel.classList.remove('hidden');
+        
+        loadMore(); // 渲染第一批
+        
+        if (!observer) setupInfiniteScroll();
         
     } catch (error) {
         console.error("真實新聞連線失敗，啟動本地快取備援", error);
+        // 防呆備援
         try {
             const fallback = await fetch('./data/summaries.json');
             allSummaries = await fallback.json();
-            filterAndRenderData();
-            setupInfiniteScroll();
+            filterAndRenderData(); // 本地備份資料需要走原來的過濾邏輯
+            if (!observer) setupInfiniteScroll();
         } catch (e) {
             if (container) container.innerHTML = `<div class="loading-text" style="color: #ea4335;">系統完全中斷，請檢查網路連線。</div>`;
         }

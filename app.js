@@ -88,8 +88,8 @@ function renderCards(dataArray, append = false) {
             </div>
         `;
 
-        // 點擊卡片彈出新聞視窗
-        cardElement.addEventListener("click", () => {
+        // 💡 🌟 核心進化：動態延遲雙軌彈出視窗
+        cardElement.addEventListener("click", async () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;
             
@@ -98,25 +98,40 @@ function renderCards(dataArray, append = false) {
             document.getElementById('modal-source').textContent = item.source;
             document.getElementById('modal-time').textContent = item.time;
             
-            let modalBodyHtml = '';
-            if (item.image) {
-                modalBodyHtml += `
-                <div class="modal-image-container">
-                    <img src="${item.image}" class="modal-image" alt="modal features">
-                </div>`;
+            // 骨架建立
+            let modalImageHtml = item.image ? `<div class="modal-image-container"><img src="${item.image}" class="modal-image" alt="modal img"></div>` : '';
+            let modalLinkHtml = item.link ? `<div style="margin-top: 24px; text-align: center;"><a href="${item.link}" target="_blank" style="display:inline-block; padding: 10px 20px; background-color: var(--accent-color); color: white; text-decoration: none; border-radius: 8px; font-size: 0.9rem;">閱讀原文</a></div>` : '';
+
+            // 🚀 防禦機制：如果是廣告（ad-）、推廣（promo-）或測試檔案（test-），它們內文早就在本地寫好了，免爬、直接秒開！
+            if (item.id.includes('ad-') || item.id.includes('promo-') || item.id.includes('test-')) {
+                document.getElementById('modal-snippet').innerHTML = `${modalImageHtml}<p>${escapeHtml(item.snippet)}</p>${modalLinkHtml}`;
+                modal.classList.remove('hidden');
+                history.pushState({ modalOpen: true }, '');
+            } else {
+                // 📰 如果是外部真實新聞，先開啟視窗並展示極具質感的「動態載入小火箭動畫」
+                document.getElementById('modal-snippet').innerHTML = `
+                    ${modalImageHtml}
+                    <div style="text-align:center; padding: 40px 20px; color: var(--text-muted);">
+                        <span style="display:inline-block; font-size:1.8rem; margin-bottom:12px; animation: badgePulse 1.6s infinite;">🚀</span>
+                        <p style="font-size:0.95rem; font-weight:500; letter-spacing:0.5px;">AI 正在為您遠端連線、擷取即時長文...</p>
+                    </div>
+                `;
+                modal.classList.remove('hidden');
+                history.pushState({ modalOpen: true }, '');
+
+                try {
+                    // 非同步向後端發起單篇網頁爬取請求
+                    const fetchUrl = `https://news-api.zhtttttt.workers.dev/?fetchUrl=${encodeURIComponent(item.link)}`;
+                    const response = await fetch(fetchUrl);
+                    const fullText = await response.text();
+                    
+                    // 爬取成功，瞬間抽換，千字長文完美噴發！
+                    document.getElementById('modal-snippet').innerHTML = `${modalImageHtml}<p>${escapeHtml(fullText)}</p>${modalLinkHtml}`;
+                } catch (error) {
+                    // 降級備援：萬一網路全斷，拿原本列表的 120 字撐著，絕不讓畫面死掉
+                    document.getElementById('modal-snippet').innerHTML = `${modalImageHtml}<p>${escapeHtml(item.snippet)} (線上長文擷取失敗)</p>${modalLinkHtml}`;
+                }
             }
-            modalBodyHtml += `<p>${escapeHtml(item.snippet)}</p>`;
-            
-            if (item.link) {
-                modalBodyHtml += `
-                    <div style="margin-top: 24px; text-align: center;">
-                        <a href="${item.link}" target="_blank" style="display:inline-block; padding: 10px 20px; background-color: var(--accent-color); color: white; text-decoration: none; border-radius: 8px; font-size: 0.9rem;">閱讀原文</a>
-                    </div>`;
-            }
-            
-            document.getElementById('modal-snippet').innerHTML = modalBodyHtml;
-            modal.classList.remove('hidden');
-            history.pushState({ modalOpen: true }, '');
         });
 
         // 內部按鈕綁定
@@ -135,36 +150,24 @@ function renderCards(dataArray, append = false) {
         });
 
         saveBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            menu.classList.add('hidden');
+            e.stopPropagation(); menu.classList.add('hidden');
             alert(`已將「${item.title}」加入儲存清單！`);
         });
 
         dislikeBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            menu.classList.add('hidden');
+            e.stopPropagation(); menu.classList.add('hidden');
             alert(`優化成功，系統將減少推薦「${item.tag}」分類的內容。`);
         });
 
         hideBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            menu.classList.add('hidden');
+            e.stopPropagation(); menu.classList.add('hidden');
             cardElement.style.transition = 'opacity 0.3s, transform 0.3s';
-            cardElement.style.opacity = '0';
-            cardElement.style.transform = 'scale(0.9)';
+            cardElement.style.opacity = '0'; cardElement.style.transform = 'scale(0.9)';
             setTimeout(() => cardElement.remove(), 300);
         });
 
-        likeBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            likeBtn.classList.toggle('liked');
-        });
-
-        shareBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            alert(`準備分享文章：${item.title}`);
-        });
-
+        likeBtn.addEventListener("click", (e) => { e.stopPropagation(); likeBtn.classList.toggle('liked'); });
+        shareBtn.addEventListener("click", (e) => { e.stopPropagation(); alert(`準備分享文章：${item.title}`); });
         container.appendChild(cardElement);
     });
 }
@@ -174,15 +177,13 @@ document.addEventListener("click", () => {
 });
 
 // ==========================================================================
-// 3. 無限滾動邏輯 (精密三路廣告插播機制)
+// 3. 無限滾動邏輯
 // ==========================================================================
 function loadMore() {
     if (currentFilteredData.length === 0 && testTemplates.length === 0 && promoTemplates.length === 0 && adTemplates.length === 0) return;
 
     const nextBatch = [];
-    while (unseenNewItems.length > 0 && nextBatch.length < BATCH_SIZE) {
-        nextBatch.push(unseenNewItems.shift());
-    }
+    while (unseenNewItems.length > 0 && nextBatch.length < BATCH_SIZE) { nextBatch.push(unseenNewItems.shift()); }
 
     while (nextBatch.length < BATCH_SIZE) {
         if (itemsSinceTest >= 6 && testTemplates.length > 0) {
@@ -205,9 +206,7 @@ function loadMore() {
             const newsIndex = newsPointer % currentFilteredData.length;
             nextBatch.push(currentFilteredData[newsIndex]);
             newsPointer++;
-        } else {
-            break; 
-        }
+        } else { break; }
 
         itemsSinceTest++; itemsSinceAd++; itemsSincePromo++; renderedCount++;
     }
@@ -217,7 +216,6 @@ function loadMore() {
 function setupInfiniteScroll() {
     const sentinel = document.getElementById('sentinel');
     if (!sentinel) return;
-
     observer = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting) { setTimeout(loadMore, 300); }
     }, { rootMargin: '200px' });
@@ -276,7 +274,7 @@ function simulateLiveUpdates() {
 }
 
 // ==========================================================================
-// 6. 事件監聽設定 (✅ 完美融合版：確保所有點擊事件、齒輪與分享絕不遺漏)
+// 6. 事件監聽設定
 // ==========================================================================
 function setupEventListeners() {
     const searchInput = document.getElementById('search-input');
@@ -318,7 +316,7 @@ function setupEventListeners() {
         });
     }
 
-    // 文章彈窗關閉攔截
+    // 新聞視窗關閉
     const modal = document.getElementById('article-modal');
     if (modal) {
         const modalClose = modal.querySelector('.modal-close');
@@ -328,7 +326,7 @@ function setupEventListeners() {
         if (modalOverlay) modalOverlay.addEventListener('click', triggerBack);
     }
 
-    // ⚙️ 設定彈窗與智慧分享控制 (完美歸位)
+    // 設定齒輪視窗關閉
     const settingsModal = document.getElementById('settings-modal');
     const settingsBtn = document.getElementById('settings-btn');
     const shareBtn = document.getElementById('settings-share-btn');
@@ -358,7 +356,7 @@ function setupEventListeners() {
             }
         });
     }
-} // 閉合 setupEventListeners
+} 
 
 // ==========================================================================
 // 7. 工具函式與資料載入入口
@@ -409,7 +407,7 @@ async function loadSummaryData() {
     }
 }
 
-// 📱 全局手機返回鍵 / 側滑返回完美雙攔截器
+// 📱 全局手機返回雙攔截器
 window.addEventListener('popstate', (event) => {
     const articleModal = document.getElementById('article-modal');
     const settingsModal = document.getElementById('settings-modal');

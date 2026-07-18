@@ -54,6 +54,26 @@
         <!-- 紅點提示 -->
         <span id="new-data-badge" class="badge hidden"></span>
     </button>
+    
+        <!-- 💡 新增：點擊卡片彈出的完整文章視窗 -->
+    <div id="article-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <div class="modal-header">
+                <span id="modal-tag" class="card-tag">分類標籤</span>
+                <h2 id="modal-title">文章標題載入中...</h2>
+                <div class="modal-meta">
+                    <span id="modal-source">來源</span> • <span id="modal-time">時間</span>
+                </div>
+            </div>
+            <hr>
+            <div class="modal-body">
+                <p id="modal-snippet">這裡會顯示完整的文章內容...</p>
+            </div>
+        </div>
+    </div>
+
 
     <script src="app.js"></script>
 </body>

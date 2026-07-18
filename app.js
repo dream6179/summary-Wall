@@ -22,7 +22,7 @@ let itemsSinceAd = 24;
 let itemsSincePromo = 6;        
 
 // ==========================================================================
-// 2. 核心功能：動態渲染卡片
+// 2. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖進化)
 // ==========================================================================
 function renderCards(dataArray, append = false) {
     const container = document.getElementById("wall-container");
@@ -43,6 +43,11 @@ function renderCards(dataArray, append = false) {
         const isNew = item.isNewData ? "font-important" : "";
         const tagClass = item.isImportant ? "card-tag font-important" : `card-tag ${isNew}`;
 
+        // 💡 🌟【瀑布流滿圖核心改裝】：如果新聞沒附圖，直接讓外部卡片也去戳後端的生圖路由！
+        const cardImgUrl = item.image ? item.image : `https://news-api.zhtttttt.workers.dev/?aiImageTitle=${encodeURIComponent(item.title)}`;
+        const imgLoadAttr = !item.image ? `onload="this.parentElement.style.animation='none'"` : '';
+        const imgContainerStyle = !item.image ? `style="background-color:#f1f3f4; position:relative; animation: badgePulse 2s infinite;"` : '';
+
         cardElement.innerHTML = `
             <button class="card-more-btn" title="更多選項">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -56,11 +61,11 @@ function renderCards(dataArray, append = false) {
                 <button class="menu-item btn-hide">不要顯示</button>
             </div>
 
-            ${item.image ? `
-            <div class="card-image-container">
-                <img src="${item.image}" class="card-image" alt="news thumbnail" loading="lazy">
+            <!-- 💡 這裡改成不論有沒有原圖都強制渲染相框，沒原圖就原地秀出 AI 畫布 -->
+            <div class="card-image-container" ${imgContainerStyle}>
+                <img src="${cardImgUrl}" class="card-image" alt="news thumbnail" loading="lazy" ${imgLoadAttr}>
+                ${!item.image ? `<div style="position:absolute; bottom:6px; right:6px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.55rem; padding:2px 6px; border-radius:4px; pointer-events:none;">🍌 AI 畫布</div>` : ''}
             </div>
-            ` : ''}
 
             <div class="${tagClass}">${item.isNewData ? '✨ 新推播 | ' : ''}${escapeHtml(item.tag)}</div>
             <h2 class="card-title">${escapeHtml(item.title)}</h2>
@@ -88,7 +93,7 @@ function renderCards(dataArray, append = false) {
             </div>
         `;
 
-        // 💡 🌟【究極優化】：秒開摘要 + 奈米香蕉動態繪圖 + Gemini 3.5 智囊導讀
+        // 點擊詳細視窗 (保持原汁原味的秒開摘要 + 點擊後不重複生圖)
         cardElement.addEventListener("click", async () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;
@@ -98,20 +103,13 @@ function renderCards(dataArray, append = false) {
             document.getElementById('modal-source').textContent = item.source;
             document.getElementById('modal-time').textContent = item.time;
             
-            // 🍌 核心黑科技：如果原始新聞「有圖」就用原圖；如果「沒圖」，立刻叫奈米香蕉在線上當場畫一張出來！
-            let modalImageHtml = '';
-            if (item.image) {
-                modalImageHtml = `<div class="modal-image-container"><img src="${item.image}" class="modal-image" alt="modal img"></div>`;
-            } else {
-                // 🚀 如果沒圖，塞入一個特別的動態生圖框，src 直接去戳 Worker 的 aiImageTitle 路由！
-                const bananaGenUrl = `https://news-api.zhtttttt.workers.dev/?aiImageTitle=${encodeURIComponent(item.title)}`;
-                modalImageHtml = `
-                    <div class="modal-image-container" style="background-color:#f1f3f4; position:relative; animation: badgePulse 2s infinite;">
-                        <img src="${bananaGenUrl}" class="modal-image" alt="Banana Gen Art" style="width:100%; height:100%; object-fit:cover;" onload="this.parentElement.style.animation='none'">
-                        <div style="position:absolute; bottom:8px; right:8px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.7rem; padding:4px 8px; border-radius:6px; pointer-events:none;">🍌 奈米香蕉 AI 畫布</div>
-                    </div>
-                `;
-            }
+            // 💡 內文大圖直接抓取跟外面一模一樣的網址，觸發瀏覽器內部快取快充，完全不浪費算力！
+            let modalImageHtml = `
+                <div class="modal-image-container" ${!item.image ? 'style="background-color:#f1f3f4; position:relative;"' : ''}>
+                    <img src="${cardImgUrl}" class="modal-image" alt="modal img" style="width:100%; height:100%; object-fit:cover;">
+                    ${!item.image ? `<div style="position:absolute; bottom:8px; right:8px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.7rem; padding:4px 8px; border-radius:6px; pointer-events:none;">🍌 奈米香蕉 AI 畫布</div>` : ''}
+                </div>
+            `;
 
             let modalLinkHtml = item.link ? `<div style="margin-top: 24px; text-align: center;"><a href="${item.link}" target="_blank" style="display:inline-block; padding: 10px 20px; background-color: var(--accent-color); color: white; text-decoration: none; border-radius: 8px; font-size: 0.9rem;">閱讀原文</a></div>` : '';
 
@@ -120,7 +118,6 @@ function renderCards(dataArray, append = false) {
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
             } else {
-                // 📰 正常外部新聞：【秒開摘要】+【非同步呼叫 Gemini 3.5 Flash 導讀】
                 document.getElementById('modal-snippet').innerHTML = `
                     ${modalImageHtml}
                     <p style="font-size:1.05rem; line-height:1.7; color:var(--text-main); margin-bottom: 24px;">
@@ -135,7 +132,7 @@ function renderCards(dataArray, append = false) {
                             <span style="display:inline-block; animation: badgePulse 1.6s infinite; margin-right: 6px;">⚡</span> 老夥伴 Gemini 正在線上進行數據剖析與衍生解讀...
                         </div>
                         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 14px; border-top: 1px dashed #dadce0; padding-top: 10px; line-height: 1.4;">
-                            ⚠️ <strong>模組提示：</strong>本評論區塊由大語言模型自動產出。內容係基於新聞標題進行趨勢推演與市場解讀，僅供輔助參考。AI 評論具有潛在幻覺風險，可能包含非當下實際發生的錯誤數據，請以官方真實公告為準。
+                            ⚠️ <strong>模組提示：</strong>本評論區塊由大語言模型自動產出。內容係基於新聞標題進行趨勢推演與市場解讀，僅供輔助參考。AI 評論具有潛在幻覺風險，請以官方真實公告為準。
                         </div>
                     </div>
                     ${modalLinkHtml}
@@ -158,7 +155,7 @@ function renderCards(dataArray, append = false) {
             }
         });
 
-        // 內部按鈕綁定
+        // 按鈕監聽防冒泡
         const moreBtn = cardElement.querySelector('.card-more-btn');
         const menu = cardElement.querySelector('.more-menu');
         const dislikeBtn = cardElement.querySelector('.btn-dislike');

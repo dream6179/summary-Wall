@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "tag": "焦點新聞",
+    "isFeatured": true,
+    "isImportant": true,
+    "title": "探討未來科技趨勢：AI 代理與邊緣運算的全新整合方案",
+    "snippet": "隨著硬體效能的突破，新一代 AI 代理服務正逐步轉移至終端設備運行...",
+    "source": "科技新報",
+    "time": "15 分鐘前"
+  },
+  {
+    "id": 2,
+    "tag": "社群動態",
+    "isFeatured": false,
+    "isImportant": false,
+    "title": "開源社群舉辦黑客松，吸引超過五百位開發者線上共襄盛舉",
+    "snippet": "本次黑客松以自動化與生活生產力為主題...",
+    "source": "技術週刊",
+    "time": "2 小時前"
+  }
+  /* 後續可以一路複製貼上塞滿 100 筆 */
+]

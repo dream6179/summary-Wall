@@ -671,66 +671,55 @@ body {
 }
 
 /* ==========================================================================
-   👨‍💻 開發者資訊與設定特區：終極壓縮版面（全面驅逐萬惡大白邊）
+   ⚙️ 齒輪設定與開發者資訊：終極超引力壓縮（徹底封印垂直拉伸大白邊）
    ========================================================================== */
 
-/* 1. 強制設定/開發者彈窗外殼放棄上下拉開，改為高密度緊湊排列 */
+/* 1. 斬斷固定高度：強迫彈窗外殼放棄撐高，內容有多少，高度就縮到多緊 */
 #settings-modal .modal-content,
-.developer-modal .modal-content,
-#developer-info-container {
-    padding: 16px !important;              /* 縮小外框內襯 */
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;/* 所有元件一律往頂部靠攏，絕不分散 */
-    gap: 10px !important;                  /* 元件之間死死鎖定只有 10px 的微距 */
+.developer-modal .modal-content {
+    height: auto !important;               /* 解除萬惡的固定高度 */
+    min-height: 0 !important;              /* 拒絕任何底線撐高 */
+    max-height: 85vh !important;           /* 頂多允許滾動，絕不原地拉屍體 */
+    justify-content: flex-start !important;/* 所有元件一律往最頂部排排坐，不准分散 */
 }
 
-/* 2. 制裁開發者資訊內部的標題與萬惡預設外邊距 */
-#settings-modal h3,
-.developer-info h3,
-.developer-title {
-    margin: 0 0 6px 0 !important;          /* 底部緊咬下一行，只留 6px */
-    padding: 0 !important;
-    font-size: 1.15rem !important;
-    line-height: 1.3 !important;
-    color: var(--text-main) !important;
-}
-
-/* 3. 暴力清空開發者資訊、版本號、電信門市資訊的所有段落大留白 */
-#settings-modal p,
-.developer-info p,
-.developer-bio,
-.version-text {
-    margin: 0 0 8px 0 !important;          /* 段落與段落之間僅保留 8px 的呼吸感 */
-    padding: 0 !important;
-    line-height: 1.5 !important;
-    font-size: 0.88rem !important;
-    color: var(--text-muted) !important;
-}
-
-/* 4. 微調開發者資訊內部的「功能清單」或「連結按鈕」區塊 */
-.developer-links,
-.settings-options-group {
-    margin: 4px 0 0 0 !important;          /* 頂部不需要額外拉開大白條 */
-    padding: 0 !important;
-    display: flex !important;
-    gap: 8px !important;                   /* 按鈕與按鈕之間只有緊湊的 8px 欄寬 */
-}
-
-/* 5. 聯絡開發者/複製網址按鈕微調 */
-#settings-share-btn,
-.developer-btn {
-    padding: 8px 16px !important;          /* 縮小按鈕內襯，維持精緻商用質感 */
+/* 2. 清空內部分隔層（如 modal-body/modal-wrapper）的預設推擠效應 */
+#settings-modal .modal-body,
+#settings-modal .settings-body,
+#settings-modal .developer-info,
+#settings-modal div[class*="content"], 
+#settings-modal div[class*="body"] {
     margin: 0 !important;
-    font-size: 0.85rem !important;
-    border-radius: 6px !important;
+    padding-top: 4px !important;           /* 上下只保留微距 4px 防貼死 */
+    padding-bottom: 4px !important;
+    height: auto !important;               /* 同步解除子容器高度 */
+    min-height: 0 !important;
+    display: block !important;             /* 萬一有隱藏的 flex 撐開，直接強制打回標準塊級 */
 }
 
-/* 6. 分隔線特殊優化：消滅原本可能被撐開的巨量上下留白 */
-#settings-modal hr,
-.developer-info hr {
-    margin: 8px 0 !important;              /* 上下只允許微距空出 8px，拒絕破版白條 */
-    border: 0 !important;
-    border-top: 1px solid #e5e7eb !important;
-    opacity: 0.6 !important;
+/* 3. 對彈窗內所有一級子元件進行全面 margin 繳械 */
+#settings-modal .modal-content > *,
+#settings-modal .modal-body > *,
+.developer-info > * {
+    margin-top: 0 !important;
+    margin-bottom: 6px !important;         /* 每個元件下方死死鎖定 6px 微距，拒絕被彈開 */
+}
+
+/* 4. 頂部大標題與關閉按鈕那一列的微距調整 */
+#settings-modal .modal-header,
+#settings-modal h2,
+#settings-modal .modal-title {
+    margin: 0 0 10px 0 !important;         /* 標題下方留 10px 就頂天了 */
+    padding: 0 !important;
+    line-height: 1.2 !important;
+}
+
+/* 5. 底部的複製按鈕、關閉按鈕特區緊湊化 */
+#settings-modal .modal-footer,
+#settings-modal .settings-actions {
+    margin-top: 8px !important;            /* 頂部不留大白條 */
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: flex-end !important;  /* 按鈕靠右靠緊 */
+    gap: 8px !important;
 }

@@ -140,7 +140,7 @@ body {
 }
 
 /* ==========================================================================
-   4. 主要卡片排版與瀑布流區域
+   4. 主要卡片排版與瀑布流區域 (升級版：加入互動按鈕與選單)
    ========================================================================== */
 .wall-wrapper {
     max-width: 1200px;
@@ -154,7 +154,7 @@ body {
     gap: 16px;
 }
 
-/* 卡片樣式 */
+/* 卡片主體 (加上 position: relative 讓右上角按鈕能定位) */
 .card {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -162,6 +162,7 @@ body {
     padding: 20px;
     display: flex;
     flex-direction: column;
+    position: relative; /* 💡 必須加上這行 */
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
 }
@@ -172,14 +173,65 @@ body {
     border-color: transparent;
 }
 
-/* 焦點卡片排版（橫跨兩格，僅在平版電腦以上生效） */
 @media (min-width: 768px) {
     .card.featured {
         grid-column: span 2;
     }
 }
 
-/* 卡片內部元素樣式 */
+/* 右上角三點點按鈕 */
+.card-more-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.card-more-btn:hover {
+    background-color: #f1f3f4;
+    color: var(--text-main);
+}
+
+/* 點開後出現的懸浮選單 */
+.more-menu {
+    position: absolute;
+    top: 45px;
+    right: 16px;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10;
+    width: 120px;
+    padding: 4px 0;
+}
+
+.menu-item {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.menu-item:hover {
+    background-color: #f1f3f4;
+}
+
+/* 卡片內部元素 */
 .card-tag {
     font-size: 0.75rem;
     font-weight: 700;
@@ -187,6 +239,7 @@ body {
     text-transform: uppercase;
     margin-bottom: 8px;
     letter-spacing: 0.5px;
+    max-width: 80%; /* 💡 避免字蓋到右上角的三個點 */
 }
 
 .card-tag.font-important {
@@ -199,6 +252,7 @@ body {
     color: var(--text-main);
     margin-bottom: 10px;
     line-height: 1.4;
+    padding-right: 20px; /* 💡 防標題撞到按鈕 */
 }
 
 .card.featured .card-title {
@@ -216,19 +270,58 @@ body {
     overflow: hidden;
 }
 
+/* 底部 Meta 與按鈕區塊 */
 .card-meta {
     font-size: 0.8rem;
     color: var(--text-muted);
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: space-between; /* 💡 讓左邊時間與右邊按鈕分開 */
     border-top: 1px solid #f1f3f4;
     padding-top: 12px;
+}
+
+.meta-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .card-meta .source {
     font-weight: 500;
     color: var(--text-main);
+}
+
+/* 右下角愛心與分享按鈕組 */
+.meta-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 50%;
+    transition: color 0.2s, background-color 0.2s;
+}
+
+.action-btn:hover {
+    background-color: #f1f3f4;
+}
+
+/* 愛心啟動時變紅 */
+.action-btn.like-btn.liked {
+    color: #ea4335;
+}
+
+.action-btn.share-btn:hover {
+    color: var(--accent-color);
 }
 
 /* ==========================================================================

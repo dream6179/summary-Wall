@@ -112,7 +112,7 @@ function filterAndRenderData() {
     }
 }
 
-// 5. 模擬後端即時推播新資料 (測試用)
+// 5. 模擬後端即時推播新資料 (測試用) - 已移除 update-time 避免手機端/電腦端報錯
 function simulateLiveUpdates() {
     setInterval(() => {
         const now = new Date();
@@ -123,32 +123,34 @@ function simulateLiveUpdates() {
             tag: "焦點新聞",
             isFeatured: false,
             isImportant: true,
-            isNewData: true, // 標記為新資料
+            isNewData: true,
             title: `【即時更新】來自邊緣伺服器的新動態 (${timeString})`,
             snippet: "這是一筆剛剛由系統自動推播進來的新資料。我們透過佇列設計，成功將它穿插進你正在往下滾動的瀑布流之中！",
             source: "系統推播中心",
             time: "剛剛"
         };
         
-        // 1. 將新資料加入總資料庫的最前面
         allSummaries.unshift(newItem);
         
-        // 2. 檢查新資料是否符合當前的篩選條件
         let matchFilter = true;
         if (currentTag !== 'all' && newItem.tag !== currentTag) matchFilter = false;
-        if (searchQuery !== '') matchFilter = false; // 簡化：搜尋狀態下不刻意干擾
+        if (searchQuery !== '') matchFilter = false;
         
         if (matchFilter) {
-            // 加入當前的過濾陣列，確保後續輪迴也會包含它
             currentFilteredData.unshift(newItem);
-            // 放進「未讀佇列」，讓無限滾動的下一批次優先抓取
             unseenNewItems.push(newItem);
             
-            // 更新畫面的最後更新時間
-            document.getElementById("update-time").textContent = `今天 ${timeString} 已更新`;
+            // 💡 主控台紀錄紀錄即可，不再頻繁操作已刪除的 HTML 節點
+            console.log(`即時推播資料流於 ${timeString} 完成同步。`);
+
+            // 當有新資料進來時，如果使用者正在往下滾，亮起紅點提示
+            const badge = document.getElementById('new-data-badge');
+            if (badge && window.scrollY > 200) {
+                badge.classList.remove('hidden');
+            }
         }
         
-    }, 12000); // 每 12 秒模擬一筆新資料進來
+    }, 12000); 
 }
 
 // 事件監聽與其他工具函式

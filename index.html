@@ -19,13 +19,16 @@
         </div>
     </header>
 
-    <!-- 中間卡片摘要瀑布流區域 -->
-<main class="wall-wrapper">
-    <div id="wall-container" class="wall-grid">
-        <!-- JS 動態生成的卡片會被塞在這裡 -->
-        <div class="loading-text">正在初始化摘要牆...</div>
-    </div>
-</main>
+        <!-- 中間卡片摘要瀑布流區域 -->
+    <main class="wall-wrapper">
+        <div id="wall-container" class="wall-grid">
+            <!-- JS 動態生成的卡片會被塞在這裡 -->
+            <div class="loading-text">正在初始化摘要牆...</div>
+        </div>
+    </main>
 
+    <!-- 💡 就是漏了這一行！記得加在 body 結束前 -->
+    <script src="app.js"></script>
 </body>
 </html>
+

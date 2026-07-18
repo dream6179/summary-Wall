@@ -16,7 +16,6 @@
     <meta property="og:description" content="現代感瀑布流排版、無限滾動、即時推播穿插，讓你一手掌握最新動態。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://你的專案名稱.pages.dev/">
-    <!-- 💡 預覽圖網址：建議放一張 1200x630 的圖片，分享時才會出現大圖 -->
     <meta property="og:image" content="https://你的專案名稱.pages.dev/preview.jpg"> 
 
     <!-- Twitter / X 分享預覽卡片 -->
@@ -28,9 +27,8 @@
 </head>
 <body>
 
-    <!-- 💡 完美修正：加入語意化頂部包覆區塊，與底部的 </header> 完美呼應 -->
     <header>
-        <!-- 1. 全新升級：完美對稱導覽列 (三欄 Grid 防禦置中版) -->
+        <!-- 1. 完美對稱導覽列 (三欄 Grid 防禦置中版) -->
         <nav class="navbar">
             <div class="nav-container">
                 <!-- 左側：網站名稱 -->
@@ -45,15 +43,16 @@
                 <!-- 右側：齒輪按鈕 -->
                 <div class="nav-right">
                     <button id="settings-btn" class="settings-gear-btn" title="系統設定">
+                        <!-- 💡 ✅ 完美修復：換上 100% 絕對不會報錯的標準鋼鐵齒輪 SVG 路徑 -->
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l-.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                            <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l-.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
                         </svg>
                     </button>
                 </div>
             </div>
         </nav>
 
-        <!-- 主題篩選分頁標籤列 (支援手機端無滾動條橫向滑動) -->
+        <!-- 主題篩選分頁標籤列 -->
         <div class="filter-tabs-wrapper">
             <div class="filter-tabs" id="filter-tabs-container">
                 <button class="tab active" data-tag="all">全部摘要</button>
@@ -71,10 +70,10 @@
     <!-- 中間卡片瀑布流區域 -->
     <main class="wall-wrapper">
         <div id="wall-container" class="wall-grid">
-            <!-- 💡 智慧混流與廣告插播卡片會由 JavaScript 動態塞在這裡 -->
+            <!-- 卡片由 JavaScript 動態塞在這裡 -->
         </div>
         
-        <!-- 作為無限滾動的底部觸發點 (Sentinel) -->
+        <!-- 無限滾動底部觸發點 -->
         <div id="sentinel" class="loading-text hidden">
             正在載入更多摘要...
         </div>
@@ -85,11 +84,10 @@
         <svg viewBox="0 0 24 24" width="24" height="24">
             <path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z" fill="currentColor"/>
         </svg>
-        <!-- 紅點提示更新燈 -->
         <span id="new-data-badge" class="badge hidden"></span>
     </button>
     
-    <!-- 3. 點擊卡片彈出的完整文章視窗 (驅魔版樣式防護) -->
+    <!-- 新聞文章細節彈窗 -->
     <div id="article-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content">
@@ -108,7 +106,7 @@
         </div>
     </div>
 
-    <!-- 4. 全新引進：設定與開發者資訊彈窗 (雙彈窗完美返回攔截) -->
+    <!-- 設定與開發者資訊彈窗 -->
     <div id="settings-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content" style="max-width: 450px;">
@@ -118,14 +116,11 @@
             </div>
             <hr>
             <div class="modal-body">
-                <!-- 開發者資訊區塊 -->
                 <div style="background-color: #f8f9fa; padding: 16px; border-radius: 12px; margin-bottom: 24px;">
                     <h4 style="color: var(--accent-color); margin-bottom: 6px;">👨‍💻 開發者資訊</h4>
                     <p style="font-size: 0.95rem; color: var(--text-main); font-weight: 500;">遠傳電信 門市特設技術專區</p>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">本系統專為門市展示牆設計，整合多路自動化資訊流與智慧型廣告插播排版演算法。</p>
                 </div>
-                
-                <!-- 操作按鈕區塊 -->
                 <button id="settings-share-btn" style="width: 100%; padding: 14px; background-color: var(--accent-color); color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/>

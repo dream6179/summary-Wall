@@ -153,12 +153,12 @@ function renderCards(dataArray, append = false) {
                         
                         <!-- 回傳文字區強制 margin 歸零 -->
                         <div id="ai-response-box" style="font-size: 0.92rem; color: #3c4043; line-height: 1.55; margin: 0; padding: 0;">
-                            <span style="display:inline-block; animation: badgePulse 1.6s infinite; margin-right: 6px;">⚡</span> 老夥伴 Gemini 正在線上進行數據剖析與衍生解讀...
+                            <span style="display:inline-block; animation: badgePulse 1.6s infinite; margin-right: 6px;">⚡</span> AI正在線上進行數據剖析與衍生解讀...
                         </div>
                         
                         <!-- 免責聲明：稍微調緊頂部間距 -->
                         <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; border-top: 1px dashed #dadce0; padding-top: 8px; line-height: 1.4;">
-                            ⚠️ <strong>模組提示：</strong>本區塊由 AI 自動產出，具有潛在幻覺風險，請以官方公告為準。
+                            ⚠️ <strong>模組提示：</strong>本區塊由 AI 自動產出，注意潛在幻覺風險，請以官方公告為準。
                         </div>
                     </div>
                     

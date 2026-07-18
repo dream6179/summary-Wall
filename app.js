@@ -224,53 +224,46 @@ function filterAndRenderData() {
     }
 }
 
-// 5. 模擬後端即時推播新資料 (升級版：隨機抽樣現有資料庫，告別罐頭台詞)
+// ==========================================================================
+// 5. 模擬後端即時推播新資料
+// ==========================================================================
 function simulateLiveUpdates() {
     setInterval(() => {
-        // 防呆：如果還沒讀取到資料，就先不執行
         if (allSummaries.length === 0) return;
 
-        // 💡 1. 隨機從你那 100 筆多元主題資料庫中，挑選一筆當作範本
         const randomIndex = Math.floor(Math.random() * allSummaries.length);
         const baseItem = allSummaries[randomIndex];
 
-        // 取得當前秒數，純粹留給 console.log 觀察用
         const now = new Date();
         const timeString = now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         
-        // 💡 2. 複製該範本，並注入新 ID、標記為新推播、時間洗成「剛剛」
         const newItem = {
             ...baseItem,
-            id: Date.now(),       // 給予全新的唯一時間戳 ID
-            isNewData: true,      // 標記為新資料，觸發黃金 ✨ 標籤
-            time: "剛剛",         // 時間洗成剛剛
-            title: `【即時】${baseItem.title}` // 加上一個即時標籤點綴，可加可不加
+            id: Date.now(),       
+            isNewData: true,      
+            time: "剛剛",         
+            title: `【即時】${baseItem.title}` 
         };
         
-        // 3. 將這筆偽裝好的新資料，塞入總資料庫的最前面
         allSummaries.unshift(newItem);
         
-        // 4. 檢查這筆資料是否符合當前使用者的分類或搜尋條件
         let matchFilter = true;
         if (currentTag !== 'all' && newItem.tag !== currentTag) matchFilter = false;
         if (searchQuery !== '') matchFilter = false; 
         
         if (matchFilter) {
-            // 同步塞入當前的過濾陣列與未讀佇列，讓無限滾動可以順暢穿插
             currentFilteredData.unshift(newItem);
             unseenNewItems.push(newItem);
             
-            // 在開發者主控台列印，方便你觀察後台有沒有認真工作
             console.log(`[${timeString} 推播成功] 分類：${newItem.tag} | 標題：${newItem.title}`);
 
-            // 如果使用者已經往下滾動了，亮起右下角按鈕的紅點提示
             const badge = document.getElementById('new-data-badge');
             if (badge && window.scrollY > 200) {
                 badge.classList.remove('hidden');
             }
         }
         
-    }, 12000); // 每 12 秒隨機抓取並推送一筆
+    }, 12000); 
 }
 
 // ==========================================================================
@@ -327,7 +320,6 @@ function setupEventListeners() {
         });
     }
 
-    // 💡 綁定文章彈出視窗 (Modal) 的關閉監聽
     const modal = document.getElementById('article-modal');
     if (modal) {
         const modalClose = modal.querySelector('.modal-close');
@@ -342,6 +334,8 @@ function setupEventListeners() {
 // ==========================================================================
 // 7. 工具函式與資料載入入口
 // ==========================================================================
+
+// 💡 補上先前漏掉的 XSS 安全過濾函式，確保全域正常執行！
 function escapeHtml(string) {
     return String(string).replace(/[&<>"']/g, s => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));
 }
@@ -349,15 +343,27 @@ function escapeHtml(string) {
 async function loadSummaryData() {
     const container = document.getElementById("wall-container");
     try {
-        const response = await fetch('./data/summaries.json');
+        // 🚀 請確認此網址與你測試成功的 Worker 網址一致
+        const response = await fetch('https://news-api.zhtttttt.workers.dev/');
+        
         if (!response.ok) throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`);
+        
         allSummaries = await response.json();
-        filterAndRenderData();
-        setupInfiniteScroll();
-        simulateLiveUpdates(); 
+        
+        filterAndRenderData();   
+        setupInfiniteScroll();   
+        simulateLiveUpdates();   
+        
     } catch (error) {
-        console.error("讀取資料失敗:", error);
-        if (container) container.innerHTML = `<div class="loading-text" style="color: #ea4335;">資料載入失敗，請確認路記與檔案是否存在。</div>`;
+        console.error("真實新聞連線失敗，啟動本地快取備援", error);
+        try {
+            const fallback = await fetch('./data/summaries.json');
+            allSummaries = await fallback.json();
+            filterAndRenderData();
+            setupInfiniteScroll();
+        } catch (e) {
+            if (container) container.innerHTML = `<div class="loading-text" style="color: #ea4335;">系統完全中斷，請檢查網路連線。</div>`;
+        }
     }
 }
 

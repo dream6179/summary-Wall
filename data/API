@@ -13,30 +13,58 @@ export default {
     const { searchParams } = new URL(request.url);
     
     // ==========================================================================
-    // 🎨【動態繪圖路由】：利用 Stable Diffusion 現場高流速作畫
+    // 🎨【動態繪圖路由】：利用 Stable Diffusion 現場高流速作畫 + 🚀 KV 算力防禦盾牌
     // ==========================================================================
     const aiImageTitle = searchParams.get('aiImageTitle');
     if (aiImageTitle) {
+      // 為圖片產生專屬的快取金鑰
+      const imgCacheKey = "ai_image:" + encodeURIComponent(aiImageTitle).substring(0, 150);
+      
       try {
+        // 🛡️ 圖片盾牌 A：先去全球 KV 記憶體裡翻翻看這張圖有沒有被畫過
+        if (env.NEWS_CACHE_KV) {
+          const cachedImg = await env.NEWS_CACHE_KV.get(imgCacheKey, { type: "arrayBuffer" });
+          if (cachedImg) {
+            console.log("🎯 圖片完美命中 KV 快取！秒回防爆算力，一滴 Cloudflare AI 額度都沒浪費！");
+            return new Response(cachedImg, {
+              headers: { 
+                "Content-Type": "image/png", 
+                "Cache-Control": "public, max-age=2592000", // 瀏覽器也快取 30 天
+                ...corsHeaders 
+              }
+            });
+          }
+        }
+
+        // 核心密碼：沒快取才驚動 Stable Diffusion 現場作畫
         const imgResponse = await env.AI.run('@cf/stabilityai/stable-diffusion-xl-base-1.0', {
           prompt: `A sleek, modern corporate digital illustration representing: ${aiImageTitle}. Minimalist concept art, bright tech lighting, clean corporate style, 16:9 aspect ratio`,
         });
+
+        // 🛡️ 圖片盾牌 B：畫好之後，立刻拷貝一份塞進 KV 口袋裡，同樣封印 30 天（2592000秒）
+        if (env.NEWS_CACHE_KV && imgResponse) {
+          // 利用 ctx.waitUntil 在背景默默上傳，完全不影響本次圖片顯示的速度
+          ctx.waitUntil(env.NEWS_CACHE_KV.put(imgCacheKey, imgResponse, { expirationTtl: 2592000 }));
+          console.log("💾 奈米香蕉畫作成功打包存入全球 KV 快取口袋！");
+        }
+
         return new Response(imgResponse, {
           headers: { 
             "Content-Type": "image/png", 
-            "Cache-Control": "public, max-age=86400", 
+            "Cache-Control": "public, max-age=2592000", 
             ...corsHeaders 
           }
         });
+
       } catch (imgError) {
-        // 備援機制：AI 罷工時回傳 1x1 透明 GIF 圖片，防前端瀑布流破版
+        // 備援降級機制：AI 罷工時回傳 1x1 透明 GIF 圖片，防前端瀑布流破版
         const transparentPixel = new Uint8Array([71,73,70,56,57,97,1,0,1,0,128,0,0,0,0,0,255,255,255,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59]);
         return new Response(transparentPixel, { headers: { "Content-Type": "image/gif", ...corsHeaders } });
       }
     }
 
     // ==========================================================================
-    // 🧠【Gemini 3.5 Flash 官方串流 + 賽博 KV 記憶體盾牌版】
+    // 🧠【Gemma 4 31B 官方原廠串流 + 賽博 KV 記憶體盾牌版】
     // ==========================================================================
     const aiTitle = searchParams.get('aiTitle');
     const aiSnippet = searchParams.get('aiSnippet');
@@ -46,14 +74,12 @@ export default {
       }
 
       try {
-        // 🛡️ 🌟【KV 盾牌防線 A】：利用新聞標題產生專屬的快取 Key
         const cacheKey = "ai_summary:" + encodeURIComponent(aiTitle).substring(0, 150);
         
-        // 如果環境有成功綁定 KV，先去全球記憶體裡翻底牌
         if (env.NEWS_CACHE_KV) {
           const cachedPayload = await env.NEWS_CACHE_KV.get(cacheKey);
           if (cachedPayload) {
-            console.log("🎯 完美命中邊緣 KV 快取！秒回防爆額度，一滴 Gemini 流量都沒浪費！");
+            console.log("🎯 完美命中邊緣 KV 快取！秒回防爆額度");
             return new Response(cachedPayload, {
               headers: { 
                 "Content-Type": "text/plain; charset=utf-8",
@@ -64,9 +90,10 @@ export default {
           }
         }
 
-        const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?key=${env.GEMINI_API_KEY}`;
+        // 🚀 核心改裝：將模型名稱由 gemini-3.5-flash 完美切換為 gemma-4-31b 官方原廠軌道
+        const gemmaApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemma-4-31b:streamGenerateContent?key=${env.GEMINI_API_KEY}`;
         
-        const googleResponse = await fetch(geminiApiUrl, {
+        const googleResponse = await fetch(gemmaApiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -76,12 +103,13 @@ export default {
                 parts: [{ text: `新聞標題：${aiTitle}\n基本摘要：${aiSnippet}` }] 
               }
             ],
+            // 💡 提示：Gemma 4 官方通道已完美相容 systemInstruction 頂級分析師人設
             systemInstruction: {
-              parts: [{ text: "你是一位精通全球科技趨勢、數位市場與網通產業的頂尖物聯網首席戰略分析師。請針對使用者提供的新聞標題與摘要，進行最嚴密、最深入的市場推演，產篇結構宏大、字數約 500 到 800 字的報告本體，不要帶有任何開場白或過渡寒暄。請務必善用「**關鍵字標題**」為論述分段，並在段落之間使用雙換行（\\n\\n）拉開結構。" }]
+              parts: [{ text: "你是一位精通全球科技趨勢、數位市場與網通產業的頂尖物聯網首席戰略分析師。請針對使用者提供的新聞標題與摘要，進行最嚴密、最深入的市場推演，產出一篇結構宏大、字數約 500 到 800 字的報告本體，不要帶有任何開場白或過渡寒暄。請務必直接使用「兩個真實的換行」來為論述進行分段，絕對不要輸出字面上的 \\n 字元。並善用「**關鍵字標題**」為論述分段。" }]
             },
             generationConfig: {
               maxOutputTokens: 2048,
-              temperature: 0.75
+              temperature: 0.7
             }
           })
         });
@@ -91,14 +119,11 @@ export default {
           throw new Error(errorData.error?.message || `Google API 回傳錯誤: ${googleResponse.status}`);
         }
 
-        // 🧙‍♂️ 💥【核心黑科技：串流背景即時錄製大師】
-        // 利用 TransformStream 建立一條雙向分流管線：文字一邊噴給第一位客人看，後台一邊錄製存進 KV
         const { readable, writable } = new TransformStream();
         const writer = writable.getWriter();
         const reader = googleResponse.body.getReader();
         const decoder = new TextDecoder();
         
-        // 用 ctx.waitUntil 讓 Cloudflare 在背景默默處理，絕不拖慢當下客人的網速
         ctx.waitUntil((async () => {
           let accumulatedBody = "";
           try {
@@ -106,16 +131,13 @@ export default {
               const { done, value } = await reader.read();
               if (done) {
                 writer.close();
-                // 錄製完畢！完美存入 KV 的口袋，設定自動過期時間為 720 小時（2592000 秒）
                 if (env.NEWS_CACHE_KV && accumulatedBody) {
                   await env.NEWS_CACHE_KV.put(cacheKey, accumulatedBody, { expirationTtl: 2592000 });
-                  console.log("💾 錄製功德圓滿，報告成功打包存入全球 KV 口袋！");
+                  console.log("💾 Gemma 4 報告成功打包存入全球 KV 快取口袋！");
                 }
                 break;
               }
-              // 記錄軌道碎片
               accumulatedBody += decoder.decode(value, { stream: true });
-              // 同步放行放流
               await writer.write(value);
             }
           } catch (streamError) {
@@ -124,7 +146,6 @@ export default {
           }
         })());
 
-        // 回傳這條正在即時一邊錄製、一邊放流的特殊管道
         return new Response(readable, {
           headers: { 
             "Content-Type": "text/plain; charset=utf-8",
@@ -167,7 +188,6 @@ export default {
         const results = await Promise.all(fetchPromises);
         const maxLength = Math.max(...results.map(arr => arr.length));
         
-        // 🧙‍♂️ 賽博交錯發牌演算法：確保四大新聞源完美穿插，視覺體驗極佳
         for (let i = 0; i < maxLength; i++) {
           for (let j = 0; j < results.length; j++) { 
             if (results[j][i]) finalItems.push(results[j][i]); 
@@ -189,7 +209,7 @@ export default {
       return new Response(JSON.stringify(finalItems), { headers: { "Content-Type": "application/json; charset=utf-8", ...corsHeaders } });
     
     } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, statusText: "Internal Server Error", headers: corsHeaders });
     }
   }
 };

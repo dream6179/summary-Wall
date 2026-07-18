@@ -492,18 +492,22 @@ body {
     white-space: pre-wrap; 
 }
 
-/* 🖼️ 彈出大視窗圖片黃金比率裁切 */
+/* 彈出大視窗圖片黃金比率裁切 - 驅魔防護版 */
 .modal-image-container {
     width: 100%;
-    aspect-ratio: 16 / 9;   /* 💡 強制補上與外面對齊的 16:9 骨架，根治手機原圖頂部的大片白底 */
+    aspect-ratio: 16 / 9;   
     overflow: hidden;
     border-radius: 12px;
     margin-bottom: 20px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    white-space: normal;    /* 💡 終極核心：強制把繼承來的 pre-wrap 改回 normal，徹底消滅程式碼換行造成的空白鬼影！ */
 }
 
+/* 彈出大視窗的圖片本體 */
 .modal-image {
     width: 100%;
     height: 100%;
-    object-fit: cover;      /* 💡 滿版黃金裁剪，消滅鬼一樣的空洞大白牆 */
+    object-fit: cover;      
+    display: block;         /* 💡 防禦屬性：確保圖片以塊級元素渲染，不殘留任何底部的基線白邊 */
 }
+

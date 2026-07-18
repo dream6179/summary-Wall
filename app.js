@@ -3,6 +3,8 @@
 // ==========================================================================
 let allSummaries = [];
 let currentFilteredData = [];
+// 找到全域狀態區，在下面加上這行
+let adTemplates = []; // 專門用來存放抓下來的個人廣告
 let currentTag = 'all';
 let searchQuery = '';
 

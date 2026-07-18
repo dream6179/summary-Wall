@@ -38,12 +38,19 @@
         </div>
     </header>
 
-    <!-- 中間卡片瀑布流區域 -->
+        <!-- 中間卡片瀑布流區域 -->
     <main class="wall-wrapper">
         <div id="wall-container" class="wall-grid">
-            <div class="loading-text">正在初始化摘要牆...</div>
+            <!-- 卡片會塞在這裡 -->
+        </div>
+        
+        <!-- 💡 新增這行：作為無限滾動的底部觸發點 (Sentinel) -->
+        <div id="sentinel" class="loading-text hidden">
+            <span class="pulse-icon" style="display:inline-block; margin-right:8px;"></span>
+            正在載入更多摘要...
         </div>
     </main>
+
 
     <script src="app.js"></script>
 </body>

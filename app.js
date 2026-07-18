@@ -3,8 +3,7 @@
 // ==========================================================================
 let allSummaries = [];
 let currentFilteredData = [];
-// 找到全域狀態區，在下面加上這行
-let adTemplates = []; // 專門用來存放抓下來的個人廣告
+let adTemplates = [];           // 專門用來存放抓下來的個人廣告
 let currentTag = 'all';
 let searchQuery = '';
 
@@ -36,7 +35,6 @@ function renderCards(dataArray, append = false) {
         const isNew = item.isNewData ? "font-important" : "";
         const tagClass = item.isImportant ? "card-tag font-important" : `card-tag ${isNew}`;
 
-        // 組裝包含互動按鈕與選單的 HTML
         cardElement.innerHTML = `
             <!-- 右上角點點按鈕 -->
             <button class="card-more-btn" title="更多選項">
@@ -45,7 +43,7 @@ function renderCards(dataArray, append = false) {
                 </svg>
             </button>
             
-            <!-- 右上角懸浮選單 (預設隱藏) -->
+            <!-- 右上角懸浮選單 -->
             <div class="more-menu hidden">
                 <button class="menu-item btn-save">儲存</button>
                 <button class="menu-item btn-dislike">不喜歡</button>
@@ -63,7 +61,6 @@ function renderCards(dataArray, append = false) {
                     <span class="time">${escapeHtml(item.time)}</span>
                 </div>
                 
-                <!-- 右下角愛心與分享 -->
                 <div class="meta-actions">
                     <button class="action-btn like-btn" title="喜歡">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -79,7 +76,6 @@ function renderCards(dataArray, append = false) {
             </div>
         `;
 
-        // 💡 點擊卡片本體 -> 打開彈出視窗看完整文章
         cardElement.addEventListener("click", () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;
@@ -99,7 +95,6 @@ function renderCards(dataArray, append = false) {
             modal.classList.remove('hidden');
         });
 
-        // 獲取按鈕節點並做防冒泡處理 (stopPropagation)
         const moreBtn = cardElement.querySelector('.card-more-btn');
         const menu = cardElement.querySelector('.more-menu');
         const dislikeBtn = cardElement.querySelector('.btn-dislike');
@@ -149,7 +144,6 @@ function renderCards(dataArray, append = false) {
     });
 }
 
-// 點擊網頁任意空白處時，自動收起所有右上角選單
 document.addEventListener("click", () => {
     document.querySelectorAll('.more-menu').forEach(m => m.classList.add('hidden'));
 });
@@ -162,26 +156,21 @@ function loadMore() {
 
     const nextBatch = [];
     
-    // 1. 優先把剛進來的新即時推播資料穿插塞進去
     while (unseenNewItems.length > 0 && nextBatch.length < BATCH_SIZE) {
         nextBatch.push(unseenNewItems.shift());
     }
 
-    // 2. 補足剩下的數量，達成流暢的原生廣告混流
     while (nextBatch.length < BATCH_SIZE) {
         if (renderedCount < currentFilteredData.length) {
-            // 👍 階段一：還有今天最新鮮的即時新聞，百分之百先吐完
             nextBatch.push(currentFilteredData[renderedCount]);
         } else {
-            // 🔄 階段二：當天新新聞看完了，啟動「舊聞 75% + 廣告 25%」的黃金比例混流機制
             const loopIndex = renderedCount - currentFilteredData.length;
             
-            // 每 4 張卡片（當 loopIndex 可以被 4 整除時）且廣告庫有資料，就塞入一則個人廣告
+            // 💡 修正微調：每 4 張舊卡片（餘數為0時）混入 1 張廣告
             if (adTemplates.length > 0 && loopIndex % 4 === 0) {
                 const adIndex = Math.floor(loopIndex / 4) % adTemplates.length;
                 nextBatch.push(adTemplates[adIndex]);
             } else {
-                // 其餘時間，繼續用銜尾蛇機制輪迴播放舊新聞
                 const newsIndex = renderedCount % currentFilteredData.length;
                 nextBatch.push(currentFilteredData[newsIndex]);
             }
@@ -191,7 +180,6 @@ function loadMore() {
 
     renderCards(nextBatch, true);
 }
-
 
 function setupInfiniteScroll() {
     const sentinel = document.getElementById('sentinel');
@@ -312,24 +300,17 @@ function setupEventListeners() {
         });
     }
 
-    // 找到這段並修改
-if (tabsContainer) {
-    tabsContainer.addEventListener('click', (e) => {
-        const clickedTab = e.target.closest('.tab');
-        if (!clickedTab) return;
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-        clickedTab.classList.add('active');
-        
-        currentTag = clickedTab.dataset.tag;
-        
-        // ❌ 原本寫法：只在本地篩選，這會導致換標籤時資料對不上
-        // filterAndRenderData();
-        
-        // ✅ 修正寫法：切換標籤時，強制觸發重新載入資料
-        loadSummaryData(); 
-    });
-}
-
+    if (tabsContainer) {
+        tabsContainer.addEventListener('click', (e) => {
+            const clickedTab = e.target.closest('.tab');
+            if (!clickedTab) return;
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            clickedTab.classList.add('active');
+            
+            currentTag = clickedTab.dataset.tag;
+            loadSummaryData(); 
+        });
+    }
 
     if (bttBtn) {
         window.addEventListener('scroll', () => {
@@ -360,6 +341,12 @@ if (tabsContainer) {
 // ==========================================================================
 // 7. 工具函式與資料載入入口
 // ==========================================================================
+
+// 💡 完美補回：防禦 XSS 攻擊的字串轉譯工具函式
+function escapeHtml(string) {
+    return String(string).replace(/[&<>"']/g, s => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));
+}
+
 async function loadSummaryData() {
     const container = document.getElementById("wall-container");
     const fetchUrl = `https://news-api.zhtttttt.workers.dev/?tag=${encodeURIComponent(currentTag)}`;
@@ -370,9 +357,9 @@ async function loadSummaryData() {
         
         allSummaries = await response.json();
         
-        // 💡 🌟 核心新增：真實新聞載入成功後，悄悄把本地的廣告庫撈進來備用
+        // 💡 修正正名：改去悄悄預載專屬的廣告檔案 ads.json，不與新聞備援檔案搶車位
         try {
-            const adResponse = await fetch('./data/summaries.json');
+            const adResponse = await fetch('./data/ads.json');
             adTemplates = await adResponse.json();
         } catch (adError) {
             console.log("廣告庫載入失敗，將使用預設新聞輪迴");
@@ -391,11 +378,11 @@ async function loadSummaryData() {
         
     } catch (error) {
         console.error("真實新聞連線失敗，啟動本地快取備援", error);
-        // 防呆備援
         try {
+            // ✅ 安全降落：連線失敗時，這台老鐵車依然去讀取真正的舊新聞備份 summaries.json
             const fallback = await fetch('./data/summaries.json');
             allSummaries = await fallback.json();
-            filterAndRenderData(); // 本地備份資料需要走原來的過濾邏輯
+            filterAndRenderData(); 
             if (!observer) setupInfiniteScroll();
         } catch (e) {
             if (container) container.innerHTML = `<div class="loading-text" style="color: #ea4335;">系統完全中斷，請檢查網路連線。</div>`;

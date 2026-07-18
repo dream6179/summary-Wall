@@ -387,12 +387,45 @@ function setupEventListeners() {
         });
     }
 
+    // ==========================================================================
+    // 💡 🌟【終極返回頂部機制】：若有新推播，回到頂部時自動原地優雅重裝發牌！
+    // ==========================================================================
+    const refreshToTopWithNewData = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (badge) badge.classList.add('hidden');
+        if (bttBtn) bttBtn.classList.add('hidden');
+
+        const container = document.getElementById("wall-container");
+        if (container) container.innerHTML = "";
+
+        unseenNewItems = []; 
+        newsPointer = 0;     
+        renderedCount = 0;   
+        
+        itemsSinceTest = 0; 
+        itemsSinceAd = 24; 
+        itemsSincePromo = 6;
+
+        loadMore();
+    };
+
     if (bttBtn) {
         window.addEventListener('scroll', () => {
             if (window.scrollY > 400) { bttBtn.classList.remove('hidden'); } else { bttBtn.classList.add('hidden'); }
         });
+        
         bttBtn.addEventListener('click', () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' }); if (badge) badge.classList.add('hidden'); 
+            if (badge && !badge.classList.contains('hidden')) {
+                refreshToTopWithNewData();
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+    }
+
+    if (badge) {
+        badge.addEventListener('click', () => {
+            refreshToTopWithNewData();
         });
     }
 

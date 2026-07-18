@@ -669,3 +669,68 @@ body {
     font-size: 0.96rem !important;
     font-weight: 600 !important;
 }
+
+/* ==========================================================================
+   👨‍💻 開發者資訊與設定特區：終極壓縮版面（全面驅逐萬惡大白邊）
+   ========================================================================== */
+
+/* 1. 強制設定/開發者彈窗外殼放棄上下拉開，改為高密度緊湊排列 */
+#settings-modal .modal-content,
+.developer-modal .modal-content,
+#developer-info-container {
+    padding: 16px !important;              /* 縮小外框內襯 */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;/* 所有元件一律往頂部靠攏，絕不分散 */
+    gap: 10px !important;                  /* 元件之間死死鎖定只有 10px 的微距 */
+}
+
+/* 2. 制裁開發者資訊內部的標題與萬惡預設外邊距 */
+#settings-modal h3,
+.developer-info h3,
+.developer-title {
+    margin: 0 0 6px 0 !important;          /* 底部緊咬下一行，只留 6px */
+    padding: 0 !important;
+    font-size: 1.15rem !important;
+    line-height: 1.3 !important;
+    color: var(--text-main) !important;
+}
+
+/* 3. 暴力清空開發者資訊、版本號、電信門市資訊的所有段落大留白 */
+#settings-modal p,
+.developer-info p,
+.developer-bio,
+.version-text {
+    margin: 0 0 8px 0 !important;          /* 段落與段落之間僅保留 8px 的呼吸感 */
+    padding: 0 !important;
+    line-height: 1.5 !important;
+    font-size: 0.88rem !important;
+    color: var(--text-muted) !important;
+}
+
+/* 4. 微調開發者資訊內部的「功能清單」或「連結按鈕」區塊 */
+.developer-links,
+.settings-options-group {
+    margin: 4px 0 0 0 !important;          /* 頂部不需要額外拉開大白條 */
+    padding: 0 !important;
+    display: flex !important;
+    gap: 8px !important;                   /* 按鈕與按鈕之間只有緊湊的 8px 欄寬 */
+}
+
+/* 5. 聯絡開發者/複製網址按鈕微調 */
+#settings-share-btn,
+.developer-btn {
+    padding: 8px 16px !important;          /* 縮小按鈕內襯，維持精緻商用質感 */
+    margin: 0 !important;
+    font-size: 0.85rem !important;
+    border-radius: 6px !important;
+}
+
+/* 6. 分隔線特殊優化：消滅原本可能被撐開的巨量上下留白 */
+#settings-modal hr,
+.developer-info hr {
+    margin: 8px 0 !important;              /* 上下只允許微距空出 8px，拒絕破版白條 */
+    border: 0 !important;
+    border-top: 1px solid #e5e7eb !important;
+    opacity: 0.6 !important;
+}

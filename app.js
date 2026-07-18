@@ -1,15 +1,23 @@
-// 儲存全域資料狀態
+// 全域狀態
 let allSummaries = [];
+let currentFilteredData = [];
 let currentTag = 'all';
 let searchQuery = '';
 
-// 1. 核心功能：將資料渲染至摘要牆
-function renderSummaryWall(dataArray) {
+// 銜尾蛇無限滾動狀態
+let renderedCount = 0;          // 已經渲染了幾張卡片
+const BATCH_SIZE = 12;          // 每次觸發載入的數量
+let unseenNewItems = [];        // 存放「剛進來但還沒塞進畫面」的新資料
+let observer = null;
+
+// 1. 核心渲染卡片 (支援 append 附加模式)
+function renderCards(dataArray, append = false) {
     const container = document.getElementById("wall-container");
     if (!container) return;
-    container.innerHTML = "";
 
-    if (dataArray.length === 0) {
+    if (!append) container.innerHTML = "";
+
+    if (dataArray.length === 0 && !append) {
         container.innerHTML = `<div class="loading-text">找不到符合的摘要內容。</div>`;
         return;
     }
@@ -17,14 +25,14 @@ function renderSummaryWall(dataArray) {
     dataArray.forEach(item => {
         const cardElement = document.createElement("article");
         cardElement.classList.add("card");
-        
-        // 如果是在篩選狀態下，通常會拿掉 featured 效果讓版面整齊；這裡我們保留原始資料設定
         if (item.isFeatured) cardElement.classList.add("featured");
 
-        const tagClass = item.isImportant ? "card-tag font-important" : "card-tag";
+        // 如果是新穿插進來的，我們給它一個亮色標籤來區分
+        const isNew = item.isNewData ? "font-important" : "";
+        const tagClass = item.isImportant ? "card-tag font-important" : `card-tag ${isNew}`;
 
         cardElement.innerHTML = `
-            <div class="${tagClass}">${escapeHtml(item.tag)}</div>
+            <div class="${tagClass}">${item.isNewData ? '✨ 新推播 | ' : ''}${escapeHtml(item.tag)}</div>
             <h2 class="card-title">${escapeHtml(item.title)}</h2>
             <p class="card-snippet">${escapeHtml(item.snippet)}</p>
             <div class="card-meta">
@@ -33,25 +41,53 @@ function renderSummaryWall(dataArray) {
                 <span class="time">${escapeHtml(item.time)}</span>
             </div>
         `;
-
-        cardElement.addEventListener("click", () => {
-            console.log(`點擊了摘要卡片 ID: ${item.id}`);
-        });
-
         container.appendChild(cardElement);
     });
 }
 
-// 2. 複合篩選邏輯 (分類標籤 + 關鍵字搜尋)
+// 2. 載入下一批次 (銜尾蛇 + 穿插新資料邏輯)
+function loadMore() {
+    if (currentFilteredData.length === 0) return;
+
+    const nextBatch = [];
+    
+    // 💡 步驟 A：優先把「剛進來的新資料」穿插進這次的載入中
+    while (unseenNewItems.length > 0 && nextBatch.length < BATCH_SIZE) {
+        nextBatch.push(unseenNewItems.shift()); // 從佇列最前面拿出來
+    }
+
+    // 💡 步驟 B：補足剩下的數量，利用 % (餘數) 達成無限輪迴
+    while (nextBatch.length < BATCH_SIZE) {
+        const dataIndex = renderedCount % currentFilteredData.length;
+        nextBatch.push(currentFilteredData[dataIndex]);
+        renderedCount++;
+    }
+
+    // 附加到 DOM 的尾端
+    renderCards(nextBatch, true);
+}
+
+// 3. 設定底部偵測 (Intersection Observer)
+function setupInfiniteScroll() {
+    const sentinel = document.getElementById('sentinel');
+    observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+            // 當哨兵進入畫面時，延遲 300 毫秒製造載入感，然後觸發 loadMore
+            setTimeout(loadMore, 300);
+        }
+    }, { rootMargin: '200px' }); // 提早 200px 觸發，讓使用者感覺不到卡頓
+    
+    observer.observe(sentinel);
+}
+
+// 4. 複合篩選與重置
 function filterAndRenderData() {
     let filtered = allSummaries;
-
-    // A. 先依據分類標籤篩選
+    
     if (currentTag !== 'all') {
         filtered = filtered.filter(item => item.tag === currentTag);
     }
-
-    // B. 再依據搜尋關鍵字篩選 (不分大小寫)
+    
     if (searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase();
         filtered = filtered.filter(item => 
@@ -61,51 +97,72 @@ function filterAndRenderData() {
         );
     }
 
-    // C. 送出渲染
-    renderSummaryWall(filtered);
-}
-
-// 3. 非同步抓取本地 JSON 資料
-async function loadSummaryData() {
-    const container = document.getElementById("wall-container");
-    try {
-        const response = await fetch('./data/summaries.json');
-        if (!response.ok) throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`);
-        
-        // 存入全域變數
-        allSummaries = await response.json();
-        
-        // 初次渲染
-        filterAndRenderData();
-    } catch (error) {
-        console.error("讀取資料失敗:", error);
-        if (container) {
-            container.innerHTML = `<div class="loading-text" style="color: #ea4335;">資料載入失敗，請確認 data/summaries.json 路徑與格式。</div>`;
-        }
+    currentFilteredData = filtered;
+    renderedCount = 0;      // 切換標籤或搜尋時，重置渲染計數
+    unseenNewItems = [];    // 清空未讀佇列
+    
+    const sentinel = document.getElementById('sentinel');
+    if (currentFilteredData.length === 0) {
+        renderCards([]);
+        sentinel.classList.add('hidden');
+    } else {
+        renderCards([]); // 先清空 DOM
+        sentinel.classList.remove('hidden');
+        loadMore();      // 塞入第一批
     }
 }
 
-// 4. 設定事件監聽器 (搜尋與標籤切換)
+// 5. 模擬後端即時推播新資料 (測試用)
+function simulateLiveUpdates() {
+    setInterval(() => {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        const newItem = {
+            id: Date.now(),
+            tag: "焦點新聞",
+            isFeatured: false,
+            isImportant: true,
+            isNewData: true, // 標記為新資料
+            title: `【即時更新】來自邊緣伺服器的新動態 (${timeString})`,
+            snippet: "這是一筆剛剛由系統自動推播進來的新資料。我們透過佇列設計，成功將它穿插進你正在往下滾動的瀑布流之中！",
+            source: "系統推播中心",
+            time: "剛剛"
+        };
+        
+        // 1. 將新資料加入總資料庫的最前面
+        allSummaries.unshift(newItem);
+        
+        // 2. 檢查新資料是否符合當前的篩選條件
+        let matchFilter = true;
+        if (currentTag !== 'all' && newItem.tag !== currentTag) matchFilter = false;
+        if (searchQuery !== '') matchFilter = false; // 簡化：搜尋狀態下不刻意干擾
+        
+        if (matchFilter) {
+            // 加入當前的過濾陣列，確保後續輪迴也會包含它
+            currentFilteredData.unshift(newItem);
+            // 放進「未讀佇列」，讓無限滾動的下一批次優先抓取
+            unseenNewItems.push(newItem);
+            
+            // 更新畫面的最後更新時間
+            document.getElementById("update-time").textContent = `今天 ${timeString} 已更新`;
+        }
+        
+    }, 12000); // 每 12 秒模擬一筆新資料進來
+}
+
+// 事件監聽與其他工具函式
 function setupEventListeners() {
     const searchInput = document.getElementById('search-input');
     const clearSearchBtn = document.getElementById('clear-search');
     const tabsContainer = document.getElementById('filter-tabs-container');
 
-    // A. 監聽搜尋輸入 (即時輸入即時篩選)
     searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value;
-        
-        // 控制清除按鈕 (X) 的顯示與隱藏
-        if (searchQuery.length > 0) {
-            clearSearchBtn.classList.remove('hidden');
-        } else {
-            clearSearchBtn.classList.add('hidden');
-        }
-        
+        searchQuery.length > 0 ? clearSearchBtn.classList.remove('hidden') : clearSearchBtn.classList.add('hidden');
         filterAndRenderData();
     });
 
-    // B. 監聽清除按鈕點擊
     clearSearchBtn.addEventListener('click', () => {
         searchInput.value = '';
         searchQuery = '';
@@ -114,39 +171,36 @@ function setupEventListeners() {
         searchInput.focus();
     });
 
-    // C. 監聽標籤列點擊 (利用事件代理 Event Delegation)
     tabsContainer.addEventListener('click', (e) => {
         const clickedTab = e.target.closest('.tab');
         if (!clickedTab) return;
-
-        // 切換 active 樣式
         document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
         clickedTab.classList.add('active');
-
-        // 更新狀態並重新篩選
         currentTag = clickedTab.dataset.tag;
         filterAndRenderData();
     });
 }
 
-// 5. 工具功能
 function escapeHtml(string) {
-    return String(string).replace(/[&<>"']/g, s => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-    }[s]));
+    return String(string).replace(/[&<>"']/g, s => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));
 }
 
-function updateRefreshTime() {
-    const timeSpan = document.getElementById("update-time");
-    if (timeSpan) {
-        const now = new Date();
-        timeSpan.textContent = `今天 ${now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })} 已更新`;
+async function loadSummaryData() {
+    const container = document.getElementById("wall-container");
+    try {
+        const response = await fetch('./data/summaries.json');
+        if (!response.ok) throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`);
+        allSummaries = await response.json();
+        filterAndRenderData();
+        setupInfiniteScroll();
+        simulateLiveUpdates(); // 啟動即時推播模擬
+    } catch (error) {
+        console.error("讀取資料失敗:", error);
+        if (container) container.innerHTML = `<div class="loading-text" style="color: #ea4335;">資料載入失敗，請確認路徑。</div>`;
     }
 }
 
-// 6. 初始化
 document.addEventListener("DOMContentLoaded", () => {
     loadSummaryData();
     setupEventListeners();
-    updateRefreshTime();
 });

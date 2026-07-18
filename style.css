@@ -38,7 +38,7 @@ body {
     position: sticky;
     top: 0;
     z-index: 100;
-    padding: 12px 24px 0 24px; /* 留底給分頁標籤 */
+    padding: 14px 24px 0 24px; /* 稍微增加上下間距，讓大搜尋框更協調 */
 }
 
 .nav-container {
@@ -47,29 +47,20 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 20px;
+    gap: 24px; /* 增加元件間距 */
 }
 
-.logo {
-    font-size: 1.4rem;
-    font-weight: 600;
-    color: var(--accent-color);
-    letter-spacing: -0.5px;
-    white-space: nowrap;
-}
-
-/* 現代感搜尋框 */
+/* 🚀 放大後的現代感搜尋框 */
 .search-box {
     position: relative;
     flex-grow: 1;
-    max-width: 600px;
-    margin: 0 20px;
+    max-width: 800px; /* 👈 從 600px 放大到 800px */
 }
 
 .search-box input {
     width: 100%;
-    padding: 10px 40px 10px 16px;
-    font-size: 0.95rem;
+    padding: 12px 44px 12px 18px; /* 👈 內襯微調，打字更舒服 */
+    font-size: 1rem;             /* 👈 字體放大到標準 1rem */
     border: 1px solid transparent;
     background-color: #f1f3f4;
     border-radius: 8px;
@@ -80,20 +71,21 @@ body {
     outline: none;
     background-color: var(--card-bg);
     border-color: var(--accent-color);
-    box-shadow: 0 1px 1px rgba(0,0,0,0.08);
+    box-shadow: 0 1px 6px rgba(32,33,36,0.28); /* 👈 點擊時聚焦陰影加強，更有 Google 搜尋感 */
 }
 
 #clear-search {
     position: absolute;
-    right: 12px;
+    right: 14px;
     top: 50%;
     transform: translateY(-50%);
     background: none;
     border: none;
-    font-size: 1.2rem;
+    font-size: 1.4rem; /* 👈 清除按鈕也等比例放大 */
     color: var(--text-muted);
     cursor: pointer;
 }
+
 
 .hidden {
     display: none;

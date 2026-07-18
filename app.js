@@ -10,7 +10,7 @@ const BATCH_SIZE = 12;          // 每次觸發載入的數量
 let unseenNewItems = [];        // 存放「剛進來但還沒塞進畫面」的新資料
 let observer = null;
 
-// 1. 核心渲染卡片 (支援 append 附加模式)
+// 1. 核心渲染卡片 (更新版：動態加入愛心、分享與右上角選單)
 function renderCards(dataArray, append = false) {
     const container = document.getElementById("wall-container");
     if (!container) return;
@@ -27,23 +27,124 @@ function renderCards(dataArray, append = false) {
         cardElement.classList.add("card");
         if (item.isFeatured) cardElement.classList.add("featured");
 
-        // 如果是新穿插進來的，我們給它一個亮色標籤來區分
         const isNew = item.isNewData ? "font-important" : "";
         const tagClass = item.isImportant ? "card-tag font-important" : `card-tag ${isNew}`;
 
+        // 組裝包含新按鈕的完整結構
         cardElement.innerHTML = `
+            <!-- 右上角點點按鈕 -->
+            <button class="card-more-btn" title="更多選項">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                </svg>
+            </button>
+            
+            <!-- 右上角懸浮選單 (預設隱藏) -->
+            <div class="more-menu hidden">
+                <button class="menu-item btn-save">儲存</button>
+                <button class="menu-item btn-dislike">不喜歡</button>
+                <button class="menu-item btn-hide">不要顯示</button>
+            </div>
+
             <div class="${tagClass}">${item.isNewData ? '✨ 新推播 | ' : ''}${escapeHtml(item.tag)}</div>
             <h2 class="card-title">${escapeHtml(item.title)}</h2>
             <p class="card-snippet">${escapeHtml(item.snippet)}</p>
+            
             <div class="card-meta">
-                <span class="source">${escapeHtml(item.source)}</span>
-                <span class="divider">•</span>
-                <span class="time">${escapeHtml(item.time)}</span>
+                <div class="meta-left">
+                    <span class="source">${escapeHtml(item.source)}</span>
+                    <span class="divider">•</span>
+                    <span class="time">${escapeHtml(item.time)}</span>
+                </div>
+                
+                <!-- 右下角愛心與分享 -->
+                <div class="meta-actions">
+                    <button class="action-btn like-btn" title="喜歡">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.5 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                    </button>
+                    <button class="action-btn share-btn" title="分享">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         `;
+
+        // 💡 綁定點擊卡片本體事件
+        cardElement.addEventListener("click", () => {
+            console.log(`點擊了摘要卡片 ID: ${item.id}`);
+        });
+
+        // 取得卡片內的所有新按鈕元素
+        const moreBtn = cardElement.querySelector('.card-more-btn');
+        const menu = cardElement.querySelector('.more-menu');
+        const dislikeBtn = cardElement.querySelector('.btn-dislike');
+        const hideBtn = cardElement.querySelector('.btn-hide');
+        const saveBtn = cardElement.querySelector('.btn-save');
+        const likeBtn = cardElement.querySelector('.like-btn');
+        const shareBtn = cardElement.querySelector('.share-btn');
+
+        // 💡 右上角三點點：控制選單開關（記得防冒泡）
+        moreBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            // 先關閉畫面上所有其他打開的選單，維持畫面乾淨
+            document.querySelectorAll('.more-menu').forEach(m => {
+                if (m !== menu) m.classList.add('hidden');
+            });
+            menu.classList.toggle('hidden');
+        });
+
+        // 💡 選單按鈕 - 儲存
+        saveBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            menu.classList.add('hidden');
+            alert(`已將「${item.title}」加入儲存清單！`);
+        });
+
+        // 💡 選單按鈕 - 不喜歡
+        dislikeBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            menu.classList.add('hidden');
+            alert(`優化成功，系統將減少推薦「${item.tag}」分類的內容。`);
+        });
+
+        // 💡 選單按鈕 - 不要顯示
+        hideBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            menu.classList.add('hidden');
+            // 動態把卡片從畫面上拔掉並做個淡出效果
+            cardElement.style.transition = 'opacity 0.3s, transform 0.3s';
+            cardElement.style.opacity = '0';
+            cardElement.style.transform = 'scale(0.9)';
+            setTimeout(() => cardElement.remove(), 300);
+        });
+
+        // 💡 右下角：點擊愛心切換狀態
+        likeBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            likeBtn.classList.toggle('liked');
+            if (likeBtn.classList.contains('liked')) {
+                console.log(`按讚卡片 ID: ${item.id}`);
+            }
+        });
+
+        // 💡 右下角：點擊分享
+        shareBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            alert(`準備分享文章：${item.title}`);
+        });
+
         container.appendChild(cardElement);
     });
 }
+
+// 💡 額外新增：點擊網頁任意空白處時，自動收起所有右上角選單
+document.addEventListener("click", () => {
+    document.querySelectorAll('.more-menu').forEach(m => m.classList.add('hidden'));
+});
 
 // 2. 載入下一批次 (銜尾蛇 + 穿插新資料邏輯)
 function loadMore() {

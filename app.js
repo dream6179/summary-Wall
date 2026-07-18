@@ -155,27 +155,43 @@ document.addEventListener("click", () => {
 });
 
 // ==========================================================================
-// 3. 無限滾動邏輯 (銜尾蛇機制)
+// 3. 無限滾動邏輯 (銜尾蛇機制 - 智慧廣告混流版)
 // ==========================================================================
 function loadMore() {
     if (currentFilteredData.length === 0) return;
 
     const nextBatch = [];
     
-    // 優先把剛進來的新資料穿插進這次的載入中
+    // 1. 優先把剛進來的新即時推播資料穿插塞進去
     while (unseenNewItems.length > 0 && nextBatch.length < BATCH_SIZE) {
         nextBatch.push(unseenNewItems.shift());
     }
 
-    // 補足剩下的數量，達成無限輪迴
+    // 2. 補足剩下的數量，達成流暢的原生廣告混流
     while (nextBatch.length < BATCH_SIZE) {
-        const dataIndex = renderedCount % currentFilteredData.length;
-        nextBatch.push(currentFilteredData[dataIndex]);
+        if (renderedCount < currentFilteredData.length) {
+            // 👍 階段一：還有今天最新鮮的即時新聞，百分之百先吐完
+            nextBatch.push(currentFilteredData[renderedCount]);
+        } else {
+            // 🔄 階段二：當天新新聞看完了，啟動「舊聞 75% + 廣告 25%」的黃金比例混流機制
+            const loopIndex = renderedCount - currentFilteredData.length;
+            
+            // 每 4 張卡片（當 loopIndex 可以被 4 整除時）且廣告庫有資料，就塞入一則個人廣告
+            if (adTemplates.length > 0 && loopIndex % 4 === 0) {
+                const adIndex = Math.floor(loopIndex / 4) % adTemplates.length;
+                nextBatch.push(adTemplates[adIndex]);
+            } else {
+                // 其餘時間，繼續用銜尾蛇機制輪迴播放舊新聞
+                const newsIndex = renderedCount % currentFilteredData.length;
+                nextBatch.push(currentFilteredData[newsIndex]);
+            }
+        }
         renderedCount++;
     }
 
     renderCards(nextBatch, true);
 }
+
 
 function setupInfiniteScroll() {
     const sentinel = document.getElementById('sentinel');

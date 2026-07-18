@@ -576,3 +576,74 @@ body {
 #modal-snippet::-webkit-scrollbar {
     display: none !important;  /* 暴力隱藏 Webkit 核心的捲軸本體 */
 }
+
+/* ==========================================================================
+   💥 終極視覺壓縮：消滅彈窗所有萬惡的大留白（秦始皇看了都讚嘆的精緻緊湊版）
+   ========================================================================== */
+
+/* 1. 強制外殼放棄上下拉開，改為從頂部緊湊排列 */
+#article-modal .modal-content {
+    padding: 16px !important;              /* 縮小整個彈窗外框的內襯間距 */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;/* 強制所有元件全部往頂部靠攏，絕不上下分散 */
+    gap: 8px !important;                   /* 每個大元件之間死死鎖定只有 8px 間距 */
+}
+
+/* 2. 制裁頂部標籤與標題的萬惡外邊距 */
+#modal-tag {
+    margin: 0 0 2px 0 !important;
+    padding: 0 !important;
+    font-size: 0.8rem !important;
+}
+
+#modal-title {
+    margin: 0 0 4px 0 !important;
+    padding: 0 !important;
+    line-height: 1.3 !important;
+    font-size: 1.25rem !important;
+}
+
+/* 3. 制裁來源與時間的欄位間距 */
+#article-modal .modal-meta,
+#article-modal .meta-left,
+#article-modal div[style*="meta"] {
+    margin: 0 0 4px 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+/* 4. 內文容器全面壓縮，內部所有元素一律用 10px 的微距緊咬 */
+#modal-snippet {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important; /* 圖片、摘要、AI面板、按鈕之間精準空出 10px 即可 */
+}
+
+/* 5. 暴力清空所有被注入標籤（p, h4, div）的瀏覽器預設大邊距 */
+#modal-snippet p,
+#modal-snippet h4,
+#modal-snippet div {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* 6. 微調淺藍色 AI 面板，內部保留舒適內襯，但外部絕不外擴 */
+#modal-ai-panel {
+    padding: 10px 12px !important;
+    margin: 0 !important;
+    background-color: #f4f8ff !important;
+    border-radius: 8px !important;
+}
+
+#modal-ai-panel h4 {
+    margin-bottom: 4px !important; /* AI 面板標題跟 AI 內文只留 4px */
+}
+
+/* 7. 最底下的閱讀原文按鈕，頂部不需要額外拉開 */
+#modal-snippet a[href*="http"] {
+    margin: 4px 0 0 0 !important;
+}

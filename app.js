@@ -344,16 +344,8 @@ if (tabsContainer) {
 // ==========================================================================
 // 7. 工具函式與資料載入入口
 // ==========================================================================
-
-// 💡 補上先前漏掉的 XSS 安全過濾函式，確保全域正常執行！
-function escapeHtml(string) {
-    return String(string).replace(/[&<>"']/g, s => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));
-}
-
 async function loadSummaryData() {
     const container = document.getElementById("wall-container");
-    
-    // 💡 萬流歸宗：永遠只呼叫這條唯一 Worker，並用 URL 參數動態帶入當前標籤
     const fetchUrl = `https://news-api.zhtttttt.workers.dev/?tag=${encodeURIComponent(currentTag)}`;
 
     try {
@@ -362,7 +354,14 @@ async function loadSummaryData() {
         
         allSummaries = await response.json();
         
-        // 後端已經精準幫我們過濾好該分類的新聞了，前端直接接管渲染與無限滾動
+        // 💡 🌟 核心新增：真實新聞載入成功後，悄悄把本地的廣告庫撈進來備用
+        try {
+            const adResponse = await fetch('./data/summaries.json');
+            adTemplates = await adResponse.json();
+        } catch (adError) {
+            console.log("廣告庫載入失敗，將使用預設新聞輪迴");
+        }
+
         currentFilteredData = allSummaries;
         renderedCount = 0;
         unseenNewItems = [];
@@ -371,8 +370,7 @@ async function loadSummaryData() {
         const sentinel = document.getElementById('sentinel');
         if (sentinel) sentinel.classList.remove('hidden');
         
-        loadMore(); // 渲染第一批
-        
+        loadMore(); 
         if (!observer) setupInfiniteScroll();
         
     } catch (error) {

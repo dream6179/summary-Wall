@@ -1,0 +1,169 @@
+/* 基礎重設與變數定義 */
+:root {
+    --bg-color: #f8f9fa;       /* Google 經典的淺灰底色 */
+    --card-bg: #ffffff;
+    --text-main: #1f1f1f;
+    --text-muted: #5f6368;
+    --accent-color: #1a73e8;   /* Google 藍 */
+    --border-color: #dadce0;
+    --shadow-sm: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    line-height: 1.5;
+}
+
+/* 頂部導覽列樣式 */
+.navbar {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 12px 24px;
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--text-main);
+    letter-spacing: -0.5px;
+}
+
+.logo span {
+    color: var(--accent-color);
+    margin-left: 4px;
+}
+
+.nav-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* 呼吸燈效果 */
+.pulse-icon {
+    width: 8px;
+    height: 8px;
+    background-color: #34a853; /* 綠色 */
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(52, 168, 83, 0.7);
+    animation: pulse 1.6s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(52, 168, 83, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0); }
+}
+
+/* 主要排版區塊 */
+.wall-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 16px;
+}
+
+/* CSS Grid 自動適應卡片瀑布流 */
+.wall-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+/* 卡片基礎樣式 */
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px; /* 現代感大圓角 */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: transparent;
+}
+
+/* 焦點卡片排版強化（橫跨兩格） */
+@media (min-width: 768px) {
+    .card.featured {
+        grid-column: span 2;
+    }
+}
+
+/* 卡片內部元素 */
+.card-tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+.card-tag.font-important {
+    color: #ea4335; /* 紅色焦點 */
+}
+
+.card-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.card.featured .card-title {
+    font-size: 1.4rem;
+}
+
+.card-snippet {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    flex-grow: 1; /* 讓內文自動填滿，維持底部對齊 */
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* 超過三行自動省略號 */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.card-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-top: 1px solid #f1f3f4;
+    padding-top: 12px;
+}
+
+.card-meta .source {
+    font-weight: 500;
+    color: var(--text-main);
+}

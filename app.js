@@ -102,11 +102,15 @@ function filterAndRenderData() {
     unseenNewItems = [];    // 清空未讀佇列
     
     const sentinel = document.getElementById('sentinel');
+    const container = document.getElementById("wall-container"); // 💡 確保抓到容器
+    
     if (currentFilteredData.length === 0) {
-        renderCards([]);
+        renderCards([]); // 真的沒資料時，才去顯示提示文字
         sentinel.classList.add('hidden');
     } else {
-        renderCards([]); // 先清空 DOM
+        // 💡 修正這裡：只做單純的 HTML 清空，不要呼叫 renderCards([]) 觸發錯誤提示文字
+        if (container) container.innerHTML = ""; 
+        
         sentinel.classList.remove('hidden');
         loadMore();      // 塞入第一批
     }

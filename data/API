@@ -1,0 +1,136 @@
+export default {
+  async fetch(request, env, ctx) {
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    };
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const currentTag = searchParams.get('tag') || 'all';
+
+    const browserHeader = { 
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" 
+    };
+
+    // 💡 終極鋼鐵陣容：全面換裝 100% 實測暢通、絕不鎖 IP 的大廠與開放 CMS 渠道
+    const sources = {
+      "cna": { url: "https://feeds.feedburner.com/cnaFirstNews", name: "中央通訊社", tag: "焦點新聞" },
+      "tech": { url: "https://technews.tw/feed/", name: "科技新報 TechNews", tag: "科技新知" },
+      "game": { url: "https://technews.tw/category/entertainment/feed/", name: "科技新報・遊戲動漫", tag: "遊戲情報" },
+      "stock": { url: "https://tw.stock.yahoo.com/rss?category=tw-market", name: "Yahoo 奇摩股市", tag: "財經新聞" }
+    };
+
+    try {
+      let finalItems = [];
+
+      if (currentTag === "all" || currentTag === "全部摘要") {
+        // 多核心並行抓取
+        const fetchPromises = Object.keys(sources).map(async (key) => {
+          try {
+            const res = await fetch(sources[key].url, { headers: browserHeader });
+            if (!res.ok) return [];
+            const xml = await res.text();
+            return parseRssToJSON(xml, sources[key].name, sources[key].tag);
+          } catch (e) {
+            return []; 
+          }
+        });
+
+        const results = await Promise.all(fetchPromises);
+
+        // 荷蘭式圓桌輪流發牌演算法（完美交叉打散內容）
+        const maxLength = Math.max(...results.map(arr => arr.length));
+        for (let i = 0; i < maxLength; i++) {
+          for (let j = 0; j < results.length; j++) {
+            if (results[j][i]) {
+              finalItems.push(results[j][i]);
+            }
+          }
+        }
+
+      } else {
+        // 單一分類頁籤篩選分支
+        let selected = sources.cna; // 預設走中央社焦點新聞
+
+        if (currentTag === "遊戲情報" || currentTag === "game") { selected = sources.game; }
+        else if (currentTag === "科技新知" || currentTag === "tech") { selected = sources.tech; }
+        else if (currentTag === "財經新聞" || currentTag === "stock") { selected = sources.stock; }
+
+        const response = await fetch(selected.url, { headers: browserHeader });
+        if (!response.ok) throw new Error(`${selected.name} 伺服器異常，狀態碼: ${response.status}`);
+        const xmlText = await response.text();
+        finalItems = parseRssToJSON(xmlText, selected.name, selected.tag);
+      }
+
+      if (finalItems.length > 0) {
+        finalItems.forEach((item, index) => item.isFeatured = (index === 0));
+      }
+
+      return new Response(JSON.stringify(finalItems), {
+        headers: { "Content-Type": "application/json; charset=utf-8", ...corsHeaders },
+      });
+
+    } catch (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: corsHeaders,
+      });
+    }
+  }
+};
+
+// 🧙‍♂️ 終極強韌 XML 解析引擎
+function parseRssToJSON(xmlText, sourceName, defaultTagName) {
+  const items = [];
+  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+  let match;
+
+  while ((match = itemRegex.exec(xmlText)) !== null) {
+    const itemContent = match[1];
+    
+    const titleMatch = itemContent.match(/<title>[\s\S]*?(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]+))[\s\S]*?<\/title>/);
+    let title = titleMatch ? (titleMatch[1] || titleMatch[2] || "") : "";
+    
+    const linkMatch = itemContent.match(/<link>[\s\S]*?(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]+))[\s\S]*?<\/link>/);
+    let link = linkMatch ? (linkMatch[1] || linkMatch[2] || "") : "";
+    
+    const descMatch = itemContent.match(/<description>[\s\S]*?(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]+))[\s\S]*?<\/description>/);
+    let description = descMatch ? (descMatch[1] || descMatch[2] || "") : "";
+    
+    const pubDateMatch = itemContent.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+    const pubDate = pubDateMatch ? pubDateMatch[1] : "";
+
+    let timestamp = 0;
+    let displayTime = "今日";
+    if (pubDate) {
+      try {
+        const dateObj = new Date(pubDate.trim());
+        if (!isNaN(dateObj.getTime())) {
+          timestamp = dateObj.getTime();
+          displayTime = dateObj.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+      } catch (e) {}
+    }
+
+    const cleanSnippet = description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+
+    items.push({
+      id: `news-${Math.random().toString(36).substring(2, 9)}`,
+      tag: defaultTagName,
+      isFeatured: false,
+      isImportant: items.length < 2,
+      title: title.trim(),
+      snippet: cleanSnippet.substring(0, 120) + (cleanSnippet.length > 120 ? "..." : ""),
+      source: sourceName, 
+      time: displayTime,
+      link: link.trim(),
+      timestamp: timestamp 
+    });
+  }
+  return items;
+}

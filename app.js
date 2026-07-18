@@ -1,17 +1,24 @@
-// 1. 核心功能：將資料渲染至摘要牆 (維持不變)
+// 儲存全域資料狀態
+let allSummaries = [];
+let currentTag = 'all';
+let searchQuery = '';
+
+// 1. 核心功能：將資料渲染至摘要牆
 function renderSummaryWall(dataArray) {
     const container = document.getElementById("wall-container");
     if (!container) return;
     container.innerHTML = "";
 
     if (dataArray.length === 0) {
-        container.innerHTML = `<div class="loading-text">目前沒有任何摘要資訊。</div>`;
+        container.innerHTML = `<div class="loading-text">找不到符合的摘要內容。</div>`;
         return;
     }
 
     dataArray.forEach(item => {
         const cardElement = document.createElement("article");
         cardElement.classList.add("card");
+        
+        // 如果是在篩選狀態下，通常會拿掉 featured 效果讓版面整齊；這裡我們保留原始資料設定
         if (item.isFeatured) cardElement.classList.add("featured");
 
         const tagClass = item.isImportant ? "card-tag font-important" : "card-tag";
@@ -35,33 +42,94 @@ function renderSummaryWall(dataArray) {
     });
 }
 
-// 2. 新增：非同步抓取本地 JSON 資料的函式
+// 2. 複合篩選邏輯 (分類標籤 + 關鍵字搜尋)
+function filterAndRenderData() {
+    let filtered = allSummaries;
+
+    // A. 先依據分類標籤篩選
+    if (currentTag !== 'all') {
+        filtered = filtered.filter(item => item.tag === currentTag);
+    }
+
+    // B. 再依據搜尋關鍵字篩選 (不分大小寫)
+    if (searchQuery.trim() !== '') {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(item => 
+            item.title.toLowerCase().includes(query) || 
+            item.snippet.toLowerCase().includes(query) ||
+            item.source.toLowerCase().includes(query)
+        );
+    }
+
+    // C. 送出渲染
+    renderSummaryWall(filtered);
+}
+
+// 3. 非同步抓取本地 JSON 資料
 async function loadSummaryData() {
     const container = document.getElementById("wall-container");
-    
     try {
-        // 讀取剛剛建立的 json 檔案
         const response = await fetch('./data/summaries.json');
+        if (!response.ok) throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`);
         
-        if (!response.ok) {
-            throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`);
-        }
+        // 存入全域變數
+        allSummaries = await response.json();
         
-        // 解析成 JS 陣列物件
-        const data = await response.json();
-        
-        // 呼叫渲染函式
-        renderSummaryWall(data);
-        
+        // 初次渲染
+        filterAndRenderData();
     } catch (error) {
         console.error("讀取資料失敗:", error);
         if (container) {
-            container.innerHTML = `<div class="loading-text" style="color: #ea4335;">資料載入失敗，請確認 data/summaries.json 路徑與格式是否正確。</div>`;
+            container.innerHTML = `<div class="loading-text" style="color: #ea4335;">資料載入失敗，請確認 data/summaries.json 路徑與格式。</div>`;
         }
     }
 }
 
-// 3. 工具小函式 (維持不變)
+// 4. 設定事件監聽器 (搜尋與標籤切換)
+function setupEventListeners() {
+    const searchInput = document.getElementById('search-input');
+    const clearSearchBtn = document.getElementById('clear-search');
+    const tabsContainer = document.getElementById('filter-tabs-container');
+
+    // A. 監聽搜尋輸入 (即時輸入即時篩選)
+    searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value;
+        
+        // 控制清除按鈕 (X) 的顯示與隱藏
+        if (searchQuery.length > 0) {
+            clearSearchBtn.classList.remove('hidden');
+        } else {
+            clearSearchBtn.classList.add('hidden');
+        }
+        
+        filterAndRenderData();
+    });
+
+    // B. 監聽清除按鈕點擊
+    clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        searchQuery = '';
+        clearSearchBtn.classList.add('hidden');
+        filterAndRenderData();
+        searchInput.focus();
+    });
+
+    // C. 監聽標籤列點擊 (利用事件代理 Event Delegation)
+    tabsContainer.addEventListener('click', (e) => {
+        const clickedTab = e.target.closest('.tab');
+        if (!clickedTab) return;
+
+        // 切換 active 樣式
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        clickedTab.classList.add('active');
+
+        // 更新狀態並重新篩選
+        currentTag = clickedTab.dataset.tag;
+        filterAndRenderData();
+    });
+}
+
+// 5. 工具功能
 function escapeHtml(string) {
     return String(string).replace(/[&<>"']/g, s => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -76,93 +144,9 @@ function updateRefreshTime() {
     }
 }
 
-// 4. 初始化
+// 6. 初始化
 document.addEventListener("DOMContentLoaded", () => {
-    loadSummaryData(); // 改呼叫這個會去 fetch 資料的函式
-    updateRefreshTime();
-});
-
-
-// 2. 更新頂部導覽列的時間（模擬即時重新整理）
-function updateRefreshTime() {
-    const timeSpan = document.getElementById("update-time");
-    if (timeSpan) {
-        const now = new Date();
-        const timeString = now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        timeSpan.textContent = `今天 ${timeString} 已更新`;
-    }
-}
-
-// 3. 核心功能：將資料渲染至摘要牆
-function renderSummaryWall(dataArray) {
-    const container = document.getElementById("wall-container");
-    
-    // 如果找不到容器，直接中斷防呆
-    if (!container) return;
-
-    // 清空現有的內容（例如：正在初始化... 的文字）
-    container.innerHTML = "";
-
-    // 如果沒資料，顯示客製化提示
-    if (dataArray.length === 0) {
-        container.innerHTML = `<div class="loading-text">目前沒有任何摘要資訊。</div>`;
-        return;
-    }
-
-    // 巡迴資料陣列，一張張卡片組裝起來
-    dataArray.forEach(item => {
-        // 建立 article 元素
-        const cardElement = document.createElement("article");
-        
-        // 根據資料屬性動態加上 class
-        cardElement.classList.add("card");
-        if (item.isFeatured) {
-            cardElement.classList.add("featured");
-        }
-
-        // 判斷標籤是否需要標紅（重要）
-        const tagClass = item.isImportant ? "card-tag font-important" : "card-tag";
-
-        // 組裝卡片內部的 HTML 結構（防禦型：確保變數安全帶入）
-        cardElement.innerHTML = `
-            <div class="${tagClass}">${escapeHtml(item.tag)}</div>
-            <h2 class="card-title">${escapeHtml(item.title)}</h2>
-            <p class="card-snippet">${escapeHtml(item.snippet)}</p>
-            <div class="card-meta">
-                <span class="source">${escapeHtml(item.source)}</span>
-                <span class="divider">•</span>
-                <span class="time">${escapeHtml(item.time)}</span>
-            </div>
-        `;
-
-        // 綁定卡片的點擊事件（未來可以導向原文連結或彈出視窗）
-        cardElement.addEventListener("click", () => {
-            console.log(`點擊了摘要卡片 ID: ${item.id} - ${item.title}`);
-            // alert(`你點擊了：${item.title}`);
-        });
-
-        // 將組裝好的卡片塞進牆面容器中
-        container.appendChild(cardElement);
-    });
-}
-
-// 4. 工具小函式：防止 XSS 安全漏洞（防範資料內含惡意 HTML 標籤）
-function escapeHtml(string) {
-    return String(string).replace(/[&<>"']/g, function (s) {
-        return {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#39;"
-        }[s];
-    });
-}
-
-// 5. 當網頁 DOM 載入完成後，執行初始化
-document.addEventListener("DOMContentLoaded", () => {
-    // 渲染卡片
-    renderSummaryWall(mockSummaries);
-    // 更新時間
+    loadSummaryData();
+    setupEventListeners();
     updateRefreshTime();
 });

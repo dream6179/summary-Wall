@@ -647,3 +647,25 @@ body {
 #modal-snippet a[href*="http"] {
     margin: 4px 0 0 0 !important;
 }
+
+/* ==========================================================================
+   🧠 AI 智慧排版特區：解救被壓縮的文字餅乾（打造數位雜誌質感）
+   ========================================================================== */
+
+/* 1. 恢復 AI 區塊內部的標準段落間距（利用三層 ID 權重強行壓制 margin: 0） */
+#article-modal #modal-snippet #ai-response-box p {
+    margin: 0 0 10px 0 !important;    /* 讓 AI 每個段落與段落之間，保留完美的 10px 呼吸高度 */
+    padding: 0 !important;
+    line-height: 1.65 !important;      /* 稍微拉大行距，久看眼睛不酸 */
+    color: #374151 !important;         /* 高質感商用深灰色 */
+    font-size: 0.92rem !important;
+}
+
+/* 2. 讓 AI 自動產生的 **粗體標題** 華麗轉身，變成搶眼的專家小看板 */
+#article-modal #modal-snippet #ai-response-box strong {
+    display: block !important;         /* 強制獨佔一行，變成漂亮的小標題 */
+    margin: 14px 0 6px 0 !important;   /* 頂部推開 14px 做出區隔，底部留 6px 緊咬段落 */
+    color: var(--accent-color) !important; /* 自動套用你的科技主色調 */
+    font-size: 0.96rem !important;
+    font-weight: 600 !important;
+}

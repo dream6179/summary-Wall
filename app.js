@@ -168,18 +168,37 @@ function renderCards(dataArray, append = false) {
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
 
+                // 🚀 ✅ 換上這段：自動幫 AI 斷句、包裝段落與粗體標題
                 try {
                     const fetchUrl = `https://news-api.zhtttttt.workers.dev/?aiTitle=${encodeURIComponent(item.title)}&aiSnippet=${encodeURIComponent(item.snippet)}`;
                     const response = await fetch(fetchUrl);
                     const aiCommentary = await response.text();
                     
                     const aiBox = document.getElementById('ai-response-box');
-                    if (aiBox) aiBox.textContent = aiCommentary;
+                    if (aiBox) {
+                        // 🧙‍♂️ 賽博排版大師：依據 AI 的雙換行符號，切成真正的 HTML 段落陣列
+                        const paragraphs = aiCommentary.split('\n\n');
+                        
+                        const finalHtml = paragraphs.map(p => {
+                            if (!p.trim()) return '';
+                            // 先進行安全轉義（防破版），再把 AI 產生的 **標題** 抽換成實體 <strong> 標籤
+                            let cleanText = escapeHtml(p.trim()).replace(/\*\*(.*?)\*\//g, '<strong>$1</strong>');
+                            
+                            // 有時候 AI 結尾會帶有多餘的粗體未閉合，加做一層萬能雙星號安全交叉防護
+                            cleanText = cleanText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                            
+                            return `<p>${cleanText}</p>`;
+                        }).join('');
+                        
+                        // 完美的把排版好的乾淨 HTML 灌入面板
+                        aiBox.innerHTML = finalHtml;
+                    }
                 } catch (error) {
                     const aiBox = document.getElementById('ai-response-box');
-                    if (aiBox) aiBox.textContent = "AI 智囊團目前連線逾時，請點擊下方閱讀原文按鈕查看完整內容。";
+                    if (aiBox) {
+                        aiBox.innerHTML = `<p>AI 智囊團目前連線逾時，請點擊下方閱讀原文按鈕查看完整內容。</p>`;
+                    }
                 }
-            }
         });
 
         // 按鈕監聽防冒泡

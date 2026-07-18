@@ -94,6 +94,7 @@ function renderCards(dataArray, append = false) {
         `;
 
         // 點擊詳細視窗 (保持原汁原味的秒開摘要 + 點擊後不重複生圖)
+        // 💡 🌟【微距緊湊優化版】：點擊秒開原始摘要，強制重設瀏覽器預設邊距
         cardElement.addEventListener("click", async () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;
@@ -103,38 +104,56 @@ function renderCards(dataArray, append = false) {
             document.getElementById('modal-source').textContent = item.source;
             document.getElementById('modal-time').textContent = item.time;
             
-            // 💡 內文大圖直接抓取跟外面一模一樣的網址，觸發瀏覽器內部快取快充，完全不浪費算力！
-            let modalImageHtml = `
-                <div class="modal-image-container" ${!item.image ? 'style="background-color:#f1f3f4; position:relative;"' : ''}>
-                    <img src="${cardImgUrl}" class="modal-image" alt="modal img" style="width:100%; height:100%; object-fit:cover;">
-                    ${!item.image ? `<div style="position:absolute; bottom:8px; right:8px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.7rem; padding:4px 8px; border-radius:6px; pointer-events:none;">🍌 奈米香蕉 AI 畫布</div>` : ''}
-                </div>
-            `;
+            // 🍌 圖片相框：將底部的間距縮小到 12px，並加上 border-radius 防止破版
+            let modalImageHtml = '';
+            if (item.image) {
+                modalImageHtml = `<div class="modal-image-container" style="margin: 0 0 12px 0; border-radius: 8px; overflow: hidden; display: block;"><img src="${item.image}" class="modal-image" alt="modal img" style="width:100%; display:block; object-fit:cover;"></div>`;
+            } else {
+                const bananaGenUrl = `https://news-api.zhtttttt.workers.dev/?aiImageTitle=${encodeURIComponent(item.title)}`;
+                modalImageHtml = `
+                    <div class="modal-image-container" style="background-color:#f1f3f4; position:relative; animation: badgePulse 2s infinite; margin: 0 0 12px 0; border-radius:8px; overflow:hidden; aspect-ratio: 16/9;">
+                        <img src="${bananaGenUrl}" class="modal-image" alt="Banana Gen Art" style="width:100%; height:100%; object-fit:cover; display:block;" onload="this.parentElement.style.animation='none'">
+                        <div style="position:absolute; bottom:6px; right:6px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.55rem; padding:2px 6px; border-radius:4px; pointer-events:none;">🍌 奈米香蕉 AI 畫布</div>
+                    </div>
+                `;
+            }
 
-            let modalLinkHtml = item.link ? `<div style="margin-top: 24px; text-align: center;"><a href="${item.link}" target="_blank" style="display:inline-block; padding: 10px 20px; background-color: var(--accent-color); color: white; text-decoration: none; border-radius: 8px; font-size: 0.9rem;">閱讀原文</a></div>` : '';
+            // 閱讀原文按鈕：微調頂部間距為 14px 即可
+            let modalLinkHtml = item.link ? `<div style="margin: 14px 0 0 0; text-align: center; padding: 0;"><a href="${item.link}" target="_blank" style="display:inline-block; padding: 8px 20px; background-color: var(--accent-color); color: white; text-decoration: none; border-radius: 6px; font-size: 0.85rem; font-weight: 500; letter-spacing: 0.5px;">閱讀原文</a></div>` : '';
 
             if (item.id.includes('ad-') || item.id.includes('promo-') || item.id.includes('test-')) {
-                document.getElementById('modal-snippet').innerHTML = `${modalImageHtml}<p style="font-size:1.05rem; line-height:1.7; color:var(--text-main); margin-bottom:16px;">${escapeHtml(item.snippet)}</p>${modalLinkHtml}`;
+                document.getElementById('modal-snippet').innerHTML = `${modalImageHtml}<p style="font-size:1rem; line-height:1.6; color:var(--text-main); margin: 0 0 12px 0; padding: 0;">${escapeHtml(item.snippet)}</p>${modalLinkHtml}`;
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
             } else {
+                // 📰 正常新聞版面：徹底拔除所有預設 margin (設為 0)，完全由我們精準配給間距
                 document.getElementById('modal-snippet').innerHTML = `
                     ${modalImageHtml}
-                    <p style="font-size:1.05rem; line-height:1.7; color:var(--text-main); margin-bottom: 24px;">
+                    
+                    <!-- 💡 新聞摘要區：強制 margin: 0 0 14px 0，拒絕瀏覽器預設拉開 -->
+                    <p style="font-size: 1rem; line-height: 1.6; color: var(--text-main); margin: 0 0 14px 0; padding: 0; white-space: pre-wrap;">
                         ${escapeHtml(item.snippet)}
                     </p>
                     
-                    <div id="modal-ai-panel" style="background-color: #f4f8ff; border: 1px solid #e1eefd; border-left: 4px solid var(--accent-color); padding: 18px; border-radius: 12px; margin-bottom: 20px; white-space: normal;">
-                        <h4 style="color: var(--accent-color); margin-bottom: 10px; font-size: 1rem; display: flex; align-items: center; gap: 6px;">
-                            <span style="font-size:1.2rem;">🧠</span> Gemini 核心即時趨勢剖析
+                    <!-- 💡 AI 面板區：margin: 0 0 12px 0 緊咬上方的摘要 -->
+                    <div id="modal-ai-panel" style="background-color: #f4f8ff; border: 1px solid #e1eefd; border-left: 4px solid var(--accent-color); padding: 12px 14px; border-radius: 10px; margin: 0 0 12px 0; white-space: normal;">
+                        
+                        <!-- 標題部分強制 margin 歸零 -->
+                        <h4 style="color: var(--accent-color); margin: 0 0 6px 0; padding: 0; font-size: 0.95rem; display: flex; align-items: center; gap: 6px; font-weight: 600;">
+                            <span style="font-size:1.1rem;">🧠</span> Gemini 核心即時趨勢剖析
                         </h4>
-                        <div id="ai-response-box" style="font-size: 0.95rem; color: #3c4043; line-height: 1.6;">
+                        
+                        <!-- 回傳文字區強制 margin 歸零 -->
+                        <div id="ai-response-box" style="font-size: 0.92rem; color: #3c4043; line-height: 1.55; margin: 0; padding: 0;">
                             <span style="display:inline-block; animation: badgePulse 1.6s infinite; margin-right: 6px;">⚡</span> 老夥伴 Gemini 正在線上進行數據剖析與衍生解讀...
                         </div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 14px; border-top: 1px dashed #dadce0; padding-top: 10px; line-height: 1.4;">
-                            ⚠️ <strong>模組提示：</strong>本評論區塊由大語言模型自動產出。內容係基於新聞標題進行趨勢推演與市場解讀，僅供輔助參考。AI 評論具有潛在幻覺風險，請以官方真實公告為準。
+                        
+                        <!-- 免責聲明：稍微調緊頂部間距 -->
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; border-top: 1px dashed #dadce0; padding-top: 8px; line-height: 1.4;">
+                            ⚠️ <strong>模組提示：</strong>本區塊由 AI 自動產出，具有潛在幻覺風險，請以官方公告為準。
                         </div>
                     </div>
+                    
                     ${modalLinkHtml}
                 `;
                 

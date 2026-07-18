@@ -32,7 +32,7 @@ body {
 }
 
 /* ==========================================================================
-   2. 頂部導覽列與大搜尋框
+   2. 頂部導覽列與大搜尋框 (三欄 Grid 強制防禦置中版)
    ========================================================================== */
 .navbar {
     background-color: var(--card-bg);
@@ -43,13 +43,15 @@ body {
     padding: 14px 24px 0 24px; 
 }
 
+/* 💡 閹割舊版 flex，升級為精準 Grid */
 .nav-container {
     max-width: 1200px;
     margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    /* 🚀 關鍵：左右兩側強制劃分各 140px 的對稱地盤，迫使中央搜尋框死死鎖在螢幕正中央！ */
+    grid-template-columns: 140px 1fr 140px; 
     align-items: center;
-    gap: 24px; 
+    gap: 16px; 
 }
 
 .logo {
@@ -58,13 +60,15 @@ body {
     color: var(--accent-color);
     letter-spacing: -0.5px;
     white-space: nowrap;
+    text-align: left; /* 貼左 */
 }
 
 /* 放大後的現代感搜尋框 */
 .search-box {
     position: relative;
-    flex-grow: 1;
-    max-width: 800px; 
+    width: 100%;
+    max-width: 650px; 
+    justify-self: center; /* 🚀 確保在 Grid 中央軌道內完美置中 */
 }
 
 .search-box input {
@@ -94,6 +98,34 @@ body {
     font-size: 1.4rem; 
     color: var(--text-muted);
     cursor: pointer;
+}
+
+/* 右側容器：負責把齒輪頂到最右邊 */
+.nav-right {
+    text-align: right;
+    justify-self: end;
+    display: flex;
+    align-items: center;
+}
+
+/* ⚙️ 齒輪按鈕精緻動畫樣式 */
+.settings-gear-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s, transform 0.4s ease; /* 加入旋轉過渡 */
+}
+
+.settings-gear-btn:hover {
+    background-color: #f1f3f4;
+    color: var(--text-main);
+    transform: rotate(45deg); /* 💡 小細節：滑鼠滑過去齒輪會悄悄轉動 45 度，極具現代網頁質感 */
 }
 
 /* ==========================================================================

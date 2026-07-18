@@ -4,7 +4,6 @@
 let allSummaries = [];
 let currentFilteredData = [];
 
-// 💡 三路獨立本地資料庫
 let testTemplates = [];         // 1. 測試檔案 (來自 summaries.json)
 let promoTemplates = [];        // 2. 固定推廣的資訊 (來自 promo.json)
 let adTemplates = [];           // 3. 手動修改的廣告 (來自 ads.json)
@@ -12,17 +11,15 @@ let adTemplates = [];           // 3. 手動修改的廣告 (來自 ads.json)
 let currentTag = 'all';
 let searchQuery = '';
 
-// 智慧混流與無限滾動狀態
-let renderedCount = 0;          // 已經渲染了幾張卡片
-const BATCH_SIZE = 12;          // 每次觸發載入的數量
-let unseenNewItems = [];        // 存放「剛進來但還沒塞進畫面」的新資料
+let renderedCount = 0;          
+const BATCH_SIZE = 12;          
+let unseenNewItems = [];        
 let observer = null;
 
-// 💡 精密間隔計數器與交錯偏移量 (同步你的最新黃金視覺設定)
-let newsPointer = 0;            // 追蹤常規新聞發到哪一筆
-let itemsSinceTest = 0;         // 距離上一條測試檔案播了幾筆常規內容
-let itemsSinceAd = 24;          // 距離上一條廣告播了幾筆（初始 24 讓第一批必出廣告）
-let itemsSincePromo = 6;        // 距離上一條固定推廣播了幾筆
+let newsPointer = 0;            
+let itemsSinceTest = 0;         
+let itemsSinceAd = 24;          // 初始 24 讓第一批必出廣告
+let itemsSincePromo = 6;        
 
 // ==========================================================================
 // 2. 核心功能：動態渲染卡片
@@ -47,21 +44,18 @@ function renderCards(dataArray, append = false) {
         const tagClass = item.isImportant ? "card-tag font-important" : `card-tag ${isNew}`;
 
         cardElement.innerHTML = `
-            <!-- 右上角點點按鈕 -->
             <button class="card-more-btn" title="更多選項">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                 </svg>
             </button>
             
-            <!-- 右上角懸浮選單 -->
             <div class="more-menu hidden">
                 <button class="menu-item btn-save">儲存</button>
                 <button class="menu-item btn-dislike">不喜歡</button>
                 <button class="menu-item btn-hide">不要顯示</button>
             </div>
 
-            <!-- 🖼️ 圖片解鎖：如果有圖片網址，就渲染精美圖框，沒有就優雅隱藏 -->
             ${item.image ? `
             <div class="card-image-container">
                 <img src="${item.image}" class="card-image" alt="news thumbnail" loading="lazy">
@@ -94,7 +88,7 @@ function renderCards(dataArray, append = false) {
             </div>
         `;
 
-        // 💡 點擊卡片本體 -> 打開彈出視窗看完整文章
+        // 點擊卡片彈出新聞視窗
         cardElement.addEventListener("click", () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;
@@ -104,7 +98,6 @@ function renderCards(dataArray, append = false) {
             document.getElementById('modal-source').textContent = item.source;
             document.getElementById('modal-time').textContent = item.time;
             
-            // 彈出視窗大圖組裝
             let modalBodyHtml = '';
             if (item.image) {
                 modalBodyHtml += `
@@ -123,12 +116,10 @@ function renderCards(dataArray, append = false) {
             
             document.getElementById('modal-snippet').innerHTML = modalBodyHtml;
             modal.classList.remove('hidden');
-
-            // 💡 🌟 打開彈窗時，向瀏覽器歷史紀錄推一個虛擬狀態
             history.pushState({ modalOpen: true }, '');
         });
 
-        // 節點綁定與事件防冒泡
+        // 內部按鈕綁定
         const moreBtn = cardElement.querySelector('.card-more-btn');
         const menu = cardElement.querySelector('.more-menu');
         const dislikeBtn = cardElement.querySelector('.btn-dislike');
@@ -189,47 +180,25 @@ function loadMore() {
     if (currentFilteredData.length === 0 && testTemplates.length === 0 && promoTemplates.length === 0 && adTemplates.length === 0) return;
 
     const nextBatch = [];
-    
     while (unseenNewItems.length > 0 && nextBatch.length < BATCH_SIZE) {
         nextBatch.push(unseenNewItems.shift());
     }
 
     while (nextBatch.length < BATCH_SIZE) {
-        
-        // 🚀 檢查一：是否該插入隨機「測試檔案」（每 6 個常規項目）
         if (itemsSinceTest >= 6 && testTemplates.length > 0) {
             const randomIdx = Math.floor(Math.random() * testTemplates.length);
-            nextBatch.push({
-                ...testTemplates[randomIdx],
-                id: `test-${Math.random().toString(36).substring(2, 9)}`
-            });
-            itemsSinceTest = 0; 
-            renderedCount++;
-            continue; 
+            nextBatch.push({ ...testTemplates[randomIdx], id: `test-${Math.random().toString(36).substring(2, 9)}` });
+            itemsSinceTest = 0; renderedCount++; continue; 
         }
-
-        // 🚀 檢查二：是否該插入隨機「廣告」（每 6 個常規項目）
         if (itemsSinceAd >= 6 && adTemplates.length > 0) {
             const randomIdx = Math.floor(Math.random() * adTemplates.length);
-            nextBatch.push({
-                ...adTemplates[randomIdx],
-                id: `ad-${Math.random().toString(36).substring(2, 9)}`
-            });
-            itemsSinceAd = 0; 
-            renderedCount++;
-            continue; 
+            nextBatch.push({ ...adTemplates[randomIdx], id: `ad-${Math.random().toString(36).substring(2, 9)}` });
+            itemsSinceAd = 0; renderedCount++; continue; 
         }
-
-        // 🚀 檢查三：是否該插入隨機「固定推廣」（每 10 個常規項目）
         if (itemsSincePromo >= 10 && promoTemplates.length > 0) {
             const randomIdx = Math.floor(Math.random() * promoTemplates.length);
-            nextBatch.push({
-                ...promoTemplates[randomIdx],
-                id: `promo-${Math.random().toString(36).substring(2, 9)}`
-            });
-            itemsSincePromo = 0; 
-            renderedCount++;
-            continue; 
+            nextBatch.push({ ...promoTemplates[randomIdx], id: `promo-${Math.random().toString(36).substring(2, 9)}` });
+            itemsSincePromo = 0; renderedCount++; continue; 
         }
 
         if (currentFilteredData.length > 0) {
@@ -240,12 +209,8 @@ function loadMore() {
             break; 
         }
 
-        itemsSinceTest++;
-        itemsSinceAd++;
-        itemsSincePromo++;
-        renderedCount++;
+        itemsSinceTest++; itemsSinceAd++; itemsSincePromo++; renderedCount++;
     }
-
     renderCards(nextBatch, true);
 }
 
@@ -254,11 +219,8 @@ function setupInfiniteScroll() {
     if (!sentinel) return;
 
     observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
-            setTimeout(loadMore, 300);
-        }
+        if (entries[0].isIntersecting) { setTimeout(loadMore, 300); }
     }, { rootMargin: '200px' });
-    
     observer.observe(sentinel);
 }
 
@@ -267,39 +229,25 @@ function setupInfiniteScroll() {
 // ==========================================================================
 function filterAndRenderData() {
     let filtered = allSummaries;
-    
-    if (currentTag !== 'all') {
-        filtered = filtered.filter(item => item.tag === currentTag);
-    }
-    
+    if (currentTag !== 'all') { filtered = filtered.filter(item => item.tag === currentTag); }
     if (searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase();
         filtered = filtered.filter(item => 
-            item.title.toLowerCase().includes(query) || 
-            item.snippet.toLowerCase().includes(query) ||
-            item.source.toLowerCase().includes(query)
+            item.title.toLowerCase().includes(query) || item.snippet.toLowerCase().includes(query) || item.source.toLowerCase().includes(query)
         );
     }
 
     currentFilteredData = filtered;
-    
-    // ✅ 完美同步：重置時，讓計數指針完全對齊你的全域自訂數值
-    renderedCount = 0;      
-    unseenNewItems = [];    
-    newsPointer = 0;
-    itemsSinceTest = 0;
-    itemsSinceAd = 24;      
-    itemsSincePromo = 6;
+    renderedCount = 0; unseenNewItems = []; newsPointer = 0;
+    itemsSinceTest = 0; itemsSinceAd = 24; itemsSincePromo = 6;
     
     const sentinel = document.getElementById('sentinel');
     const container = document.getElementById("wall-container");
     
     if (currentFilteredData.length === 0) {
-        renderCards([]); 
-        if (sentinel) sentinel.classList.add('hidden');
+        renderCards([]); if (sentinel) sentinel.classList.add('hidden');
     } else {
-        if (container) container.innerHTML = ""; 
-        if (sentinel) sentinel.classList.remove('hidden');
+        if (container) container.innerHTML = ""; if (sentinel) sentinel.classList.remove('hidden');
         loadMore();      
     }
 }
@@ -310,21 +258,9 @@ function filterAndRenderData() {
 function simulateLiveUpdates() {
     setInterval(() => {
         if (allSummaries.length === 0) return;
-
         const randomIndex = Math.floor(Math.random() * allSummaries.length);
         const baseItem = allSummaries[randomIndex];
-
-        const now = new Date();
-        const timeString = now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        
-        const newItem = {
-            ...baseItem,
-            id: Date.now(),       
-            isNewData: true,      
-            time: "剛剛",         
-            title: `【即時】${baseItem.title}` 
-        };
-        
+        const newItem = { ...baseItem, id: Date.now(), isNewData: true, time: "剛剛", title: `【即時】${baseItem.title}` };
         allSummaries.unshift(newItem);
         
         let matchFilter = true;
@@ -332,22 +268,15 @@ function simulateLiveUpdates() {
         if (searchQuery !== '') matchFilter = false; 
         
         if (matchFilter) {
-            currentFilteredData.unshift(newItem);
-            unseenNewItems.push(newItem);
-            
-            console.log(`[${timeString} 推播成功] 分類：${newItem.tag} | 標題：${newItem.title}`);
-
+            currentFilteredData.unshift(newItem); unseenNewItems.push(newItem);
             const badge = document.getElementById('new-data-badge');
-            if (badge && window.scrollY > 200) {
-                badge.classList.remove('hidden');
-            }
+            if (badge && window.scrollY > 200) { badge.classList.remove('hidden'); }
         }
-        
     }, 12000); 
 }
 
 // ==========================================================================
-// 6. 事件監聽設定
+// 6. 事件監聽設定 (✅ 完美融合版：確保所有點擊事件、齒輪與分享絕不遺漏)
 // ==========================================================================
 function setupEventListeners() {
     const searchInput = document.getElementById('search-input');
@@ -362,120 +291,74 @@ function setupEventListeners() {
             searchQuery.length > 0 ? clearSearchBtn.classList.remove('hidden') : clearSearchBtn.classList.add('hidden');
             filterAndRenderData();
         });
-            // ==========================================================================
-    // ⚙️ 設定彈窗與智慧跨平台分享控制邏輯
-    // ==========================================================================
-    const settingsModal = document.getElementById('settings-modal');
-    const settingsBtn = document.getElementById('settings-btn');
-    const shareBtn = document.getElementById('settings-share-btn');
-
-    if (settingsBtn && settingsModal) {
-        // 點擊齒輪 -> 打開設定彈窗 + 注入虛擬歷史紀錄
-        settingsBtn.addEventListener('click', () => {
-            settingsModal.classList.remove('hidden');
-            history.pushState({ modalOpen: true }, '');
-        });
-
-        // 點擊設定彈窗的 X 或者是背景遮罩 -> 觸發返回
-        const closeBtn = settingsModal.querySelector('.modal-close');
-        const overlay = settingsModal.querySelector('.modal-overlay');
-        const triggerSettingsBack = () => {
-            if (!settingsModal.classList.contains('hidden')) {
-                history.back();
-            }
-        };
-        if (closeBtn) closeBtn.addEventListener('click', triggerSettingsBack);
-        if (overlay) overlay.addEventListener('click', triggerSettingsBack);
-    }
-
-    // 🚀 核心：智慧跨平台分享按鈕
-    if (shareBtn) {
-        shareBtn.addEventListener('click', () => {
-            // 📱 偵測：如果環境支援手機原生分享 (如 LINE、FB、原生分享面板)
-            if (navigator.share) {
-                navigator.share({
-                    title: '摘要牆 - 門市高效資訊流',
-                    text: '來看全台最速、交叉打散排版的即時摘要牆！',
-                    url: window.location.href
-                })
-                .then(() => console.log('原生分享成功'))
-                .catch((err) => console.log('取消分享', err));
-            } else {
-                // 💻 備援：不支援原生的電腦版瀏覽器，一秒執行剪貼簿自動複製
-                navigator.clipboard.writeText(window.location.href)
-                    .then(() => {
-                        // 視覺優化：動態改變按鈕文字作為成功反饋，比死板的 alert 漂亮十倍
-                        const originalText = shareBtn.innerHTML;
-                        shareBtn.style.backgroundColor = '#34a853'; // 變綠色
-                        shareBtn.innerHTML = '✅ 網址已成功複製！';
-                        
-                        setTimeout(() => {
-                            shareBtn.style.backgroundColor = '';
-                            shareBtn.innerHTML = originalText;
-                        }, 2000);
-                    })
-                    .catch(() => {
-                        alert('複製失敗，請手動複製網址：' + window.location.href);
-                    });
-            }
-        });
-    }
-
     }
 
     if (clearSearchBtn) {
         clearSearchBtn.addEventListener('click', () => {
-            searchInput.value = '';
-            searchQuery = '';
-            clearSearchBtn.classList.add('hidden');
-            filterAndRenderData();
-            searchInput.focus();
+            searchInput.value = ''; searchQuery = ''; clearSearchBtn.classList.add('hidden');
+            filterAndRenderData(); searchInput.focus();
         });
     }
 
     if (tabsContainer) {
         tabsContainer.addEventListener('click', (e) => {
-            const clickedTab = e.target.closest('.tab');
-            if (!clickedTab) return;
+            const clickedTab = e.target.closest('.tab'); if (!clickedTab) return;
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             clickedTab.classList.add('active');
-            
-            currentTag = clickedTab.dataset.tag;
-            loadSummaryData(); 
+            currentTag = clickedTab.dataset.tag; loadSummaryData(); 
         });
     }
 
     if (bttBtn) {
         window.addEventListener('scroll', () => {
-            if (window.scrollY > 400) {
-                bttBtn.classList.remove('hidden');
-            } else {
-                bttBtn.classList.add('hidden');
-            }
+            if (window.scrollY > 400) { bttBtn.classList.remove('hidden'); } else { bttBtn.classList.add('hidden'); }
         });
-
         bttBtn.addEventListener('click', () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            if (badge) badge.classList.add('hidden'); 
+            window.scrollTo({ top: 0, behavior: 'smooth' }); if (badge) badge.classList.add('hidden'); 
         });
     }
 
+    // 文章彈窗關閉攔截
     const modal = document.getElementById('article-modal');
     if (modal) {
         const modalClose = modal.querySelector('.modal-close');
         const modalOverlay = modal.querySelector('.modal-overlay');
-        
-        // 💡 點擊 X 或遮罩時，我們不直接關彈窗，而是觸發瀏覽器「返回」消耗掉虛擬紀錄
-        const triggerBack = () => {
-            if (!modal.classList.contains('hidden')) {
-                history.back();
-            }
-        };
-        
+        const triggerBack = () => { if (!modal.classList.contains('hidden')) { history.back(); } };
         if (modalClose) modalClose.addEventListener('click', triggerBack);
         if (modalOverlay) modalOverlay.addEventListener('click', triggerBack);
     }
-} // ✅ 完美歸位：成功補上這個閉合大括號，把 Section 6 劃下完美句點！
+
+    // ⚙️ 設定彈窗與智慧分享控制 (完美歸位)
+    const settingsModal = document.getElementById('settings-modal');
+    const settingsBtn = document.getElementById('settings-btn');
+    const shareBtn = document.getElementById('settings-share-btn');
+
+    if (settingsBtn && settingsModal) {
+        settingsBtn.addEventListener('click', () => {
+            settingsModal.classList.remove('hidden');
+            history.pushState({ modalOpen: true }, '');
+        });
+        const closeBtn = settingsModal.querySelector('.modal-close');
+        const overlay = settingsModal.querySelector('.modal-overlay');
+        const triggerSettingsBack = () => { if (!settingsModal.classList.contains('hidden')) { history.back(); } };
+        if (closeBtn) closeBtn.addEventListener('click', triggerSettingsBack);
+        if (overlay) overlay.addEventListener('click', triggerSettingsBack);
+    }
+
+    if (shareBtn) {
+        shareBtn.addEventListener('click', () => {
+            if (navigator.share) {
+                navigator.share({ title: '摘要牆', text: '來看即時摘要牆！', url: window.location.href })
+                .then(() => console.log('分享成功')).catch((err) => console.log('取消分享', err));
+            } else {
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    const originalText = shareBtn.innerHTML; shareBtn.style.backgroundColor = '#34a853'; shareBtn.innerHTML = '✅ 網址已成功複製！';
+                    setTimeout(() => { shareBtn.style.backgroundColor = ''; shareBtn.innerHTML = originalText; }, 2000);
+                }).catch(() => { alert('複製失敗：' + window.location.href); });
+            }
+        });
+    }
+} // 閉合 setupEventListeners
 
 // ==========================================================================
 // 7. 工具函式與資料載入入口
@@ -491,7 +374,6 @@ async function loadSummaryData() {
     try {
         const response = await fetch(fetchUrl);
         if (!response.ok) throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`);
-        
         allSummaries = await response.json();
         
         try {
@@ -500,22 +382,12 @@ async function loadSummaryData() {
                 fetch('./data/promo.json').then(r => r.json()).catch(() => []),
                 fetch('./data/ads.json').then(r => r.json()).catch(() => [])
             ]);
-            testTemplates = testRes;
-            promoTemplates = promoRes;
-            adTemplates = adRes;
-        } catch (localError) {
-            console.log("本地特殊卡片預載失敗");
-        }
+            testTemplates = testRes; promoTemplates = promoRes; adTemplates = adRes;
+        } catch (localError) { console.log("本地特殊卡片預載失敗"); }
 
         currentFilteredData = allSummaries;
-        
-        // ✅ 完美同步：頁面初始化載入時，同樣完全遵循你的自訂偏移量
-        renderedCount = 0;
-        unseenNewItems = [];
-        newsPointer = 0;
-        itemsSinceTest = 0;
-        itemsSinceAd = 24;      
-        itemsSincePromo = 6;
+        renderedCount = 0; unseenNewItems = []; newsPointer = 0;
+        itemsSinceTest = 0; itemsSinceAd = 24; itemsSincePromo = 6;
         
         if (container) container.innerHTML = ""; 
         const sentinel = document.getElementById('sentinel');
@@ -529,8 +401,7 @@ async function loadSummaryData() {
         try {
             const fallback = await fetch('./data/summaries.json');
             allSummaries = await fallback.json();
-            testTemplates = allSummaries; 
-            filterAndRenderData(); 
+            testTemplates = allSummaries; filterAndRenderData(); 
             if (!observer) setupInfiniteScroll();
         } catch (e) {
             if (container) container.innerHTML = `<div class="loading-text" style="color: #ea4335;">系統完全中斷，請檢查網路連線。</div>`;
@@ -538,20 +409,15 @@ async function loadSummaryData() {
     }
 }
 
-// ==========================================================================
-// 💡 🌟 終極防禦：手機實體返回鍵 / 側滑返回手勢的完美雙攔截器
-// ==========================================================================
+// 📱 全局手機返回鍵 / 側滑返回完美雙攔截器
 window.addEventListener('popstate', (event) => {
     const articleModal = document.getElementById('article-modal');
     const settingsModal = document.getElementById('settings-modal');
-    
-    // 如果返回時新聞彈窗開著，關掉它
-    if (articleModal && !articleModal.classList.contains('hidden')) {
-        articleModal.classList.add('hidden');
-    }
-    
-    // 如果返回時設定彈窗開著，也關掉它
-    if (settingsModal && !settingsModal.classList.contains('hidden')) {
-        settingsModal.classList.add('hidden');
-    }
+    if (articleModal && !articleModal.classList.contains('hidden')) { articleModal.classList.add('hidden'); }
+    if (settingsModal && !settingsModal.classList.contains('hidden')) { settingsModal.classList.add('hidden'); }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadSummaryData();
+    setupEventListeners();
 });

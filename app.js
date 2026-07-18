@@ -3,15 +3,26 @@
 // ==========================================================================
 let allSummaries = [];
 let currentFilteredData = [];
-let adTemplates = [];           // 專門用來存放抓下來的個人廣告
+
+// 💡 三路獨立本地資料庫
+let testTemplates = [];         // 1. 測試檔案 (來自 summaries.json)
+let promoTemplates = [];        // 2. 固定推廣的資訊 (來自 promo.json)
+let adTemplates = [];           // 3. 手動修改的廣告 (來自 ads.json)
+
 let currentTag = 'all';
 let searchQuery = '';
 
-// 銜尾蛇無限滾動狀態
+// 智慧混流與無限滾動狀態
 let renderedCount = 0;          // 已經渲染了幾張卡片
 const BATCH_SIZE = 12;          // 每次觸發載入的數量
 let unseenNewItems = [];        // 存放「剛進來但還沒塞進畫面」的新資料
 let observer = null;
+
+// 💡 核心新增：精密間隔計數器與交錯偏移量
+let newsPointer = 0;            // 追蹤常規新聞發到哪一筆
+let itemsSinceTest = 0;         // 距離上一條測試檔案播了幾筆常規內容
+let itemsSinceAd = 3;           // 距離上一條廣告播了幾筆（初始設 3 完美交錯）
+let itemsSincePromo = 5;        // 距離上一條固定推廣播了幾筆（初始設 5 完美交錯）
 
 // ==========================================================================
 // 2. 核心功能：動態渲染卡片
@@ -149,32 +160,70 @@ document.addEventListener("click", () => {
 });
 
 // ==========================================================================
-// 3. 無限滾動邏輯 (銜尾蛇機制 - 智慧廣告混流版)
+// 3. 無限滾動邏輯 (精密三路廣告插播機制)
 // ==========================================================================
 function loadMore() {
-    if (currentFilteredData.length === 0) return;
+    if (currentFilteredData.length === 0 && testTemplates.length === 0 && promoTemplates.length === 0 && adTemplates.length === 0) return;
 
     const nextBatch = [];
     
+    // 1. 優先把剛進來的新即時推播資料塞進去
     while (unseenNewItems.length > 0 && nextBatch.length < BATCH_SIZE) {
         nextBatch.push(unseenNewItems.shift());
     }
 
+    // 2. 補足剩下的數量，嚴格按照常規內容計數進行插播
     while (nextBatch.length < BATCH_SIZE) {
-        if (renderedCount < currentFilteredData.length) {
-            nextBatch.push(currentFilteredData[renderedCount]);
-        } else {
-            const loopIndex = renderedCount - currentFilteredData.length;
-            
-            // 💡 修正微調：每 4 張舊卡片（餘數為0時）混入 1 張廣告
-            if (adTemplates.length > 0 && loopIndex % 4 === 0) {
-                const adIndex = Math.floor(loopIndex / 4) % adTemplates.length;
-                nextBatch.push(adTemplates[adIndex]);
-            } else {
-                const newsIndex = renderedCount % currentFilteredData.length;
-                nextBatch.push(currentFilteredData[newsIndex]);
-            }
+        
+        // 🚀 檢查一：是否該插入隨機「測試檔案」（每 6 個常規項目）
+        if (itemsSinceTest >= 6 && testTemplates.length > 0) {
+            const randomIdx = Math.floor(Math.random() * testTemplates.length);
+            nextBatch.push({
+                ...testTemplates[randomIdx],
+                id: `test-${Math.random().toString(36).substring(2, 9)}`
+            });
+            itemsSinceTest = 0; // 重置計數
+            renderedCount++;
+            continue; // 跳過本次常規新聞發放
         }
+
+        // 🚀 檢查二：是否該插入隨機「廣告」（每 6 個常規項目）
+        if (itemsSinceAd >= 6 && adTemplates.length > 0) {
+            const randomIdx = Math.floor(Math.random() * adTemplates.length);
+            nextBatch.push({
+                ...adTemplates[randomIdx],
+                id: `ad-${Math.random().toString(36).substring(2, 9)}`
+            });
+            itemsSinceAd = 0; // 重置計數
+            renderedCount++;
+            continue; 
+        }
+
+        // 🚀 檢查三：是否該插入隨機「固定推廣」（每 10 個常規項目）
+        if (itemsSincePromo >= 10 && promoTemplates.length > 0) {
+            const randomIdx = Math.floor(Math.random() * promoTemplates.length);
+            nextBatch.push({
+                ...promoTemplates[randomIdx],
+                id: `promo-${Math.random().toString(36).substring(2, 9)}`
+            });
+            itemsSincePromo = 0; // 重置計數
+            renderedCount++;
+            continue; 
+        }
+
+        // 📝 發放常規內容（正常抓新聞，看完就自動無限輪迴舊聞）
+        if (currentFilteredData.length > 0) {
+            const newsIndex = newsPointer % currentFilteredData.length;
+            nextBatch.push(currentFilteredData[newsIndex]);
+            newsPointer++;
+        } else {
+            break; // 防呆安全閥
+        }
+
+        // 💡 只有成功塞入一則常規新聞內容時，特殊插播的計數器才會前進
+        itemsSinceTest++;
+        itemsSinceAd++;
+        itemsSincePromo++;
         renderedCount++;
     }
 
@@ -214,8 +263,14 @@ function filterAndRenderData() {
     }
 
     currentFilteredData = filtered;
+    
+    // 🔍 搜尋或過濾時，將計數器與指針歸零，確保搜尋結果排版一致
     renderedCount = 0;      
     unseenNewItems = [];    
+    newsPointer = 0;
+    itemsSinceTest = 0;
+    itemsSinceAd = 3;
+    itemsSincePromo = 5;
     
     const sentinel = document.getElementById('sentinel');
     const container = document.getElementById("wall-container");
@@ -341,8 +396,6 @@ function setupEventListeners() {
 // ==========================================================================
 // 7. 工具函式與資料載入入口
 // ==========================================================================
-
-// 💡 完美補回：防禦 XSS 攻擊的字串轉譯工具函式
 function escapeHtml(string) {
     return String(string).replace(/[&<>"']/g, s => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));
 }
@@ -357,17 +410,29 @@ async function loadSummaryData() {
         
         allSummaries = await response.json();
         
-        // 💡 修正正名：改去悄悄預載專屬的廣告檔案 ads.json，不與新聞備援檔案搶車位
+        // 💡 🌟 同步載入三路本地輔助檔案，並給予獨立的錯誤防呆
         try {
-            const adResponse = await fetch('./data/ads.json');
-            adTemplates = await adResponse.json();
-        } catch (adError) {
-            console.log("廣告庫載入失敗，將使用預設新聞輪迴");
+            const [testRes, promoRes, adRes] = await Promise.all([
+                fetch('./data/summaries.json').then(r => r.json()).catch(() => []),
+                fetch('./data/promo.json').then(r => r.json()).catch(() => []),
+                fetch('./data/ads.json').then(r => r.json()).catch(() => [])
+            ]);
+            testTemplates = testRes;
+            promoTemplates = promoRes;
+            adTemplates = adRes;
+        } catch (localError) {
+            console.log("本地特殊卡片預載失敗");
         }
 
         currentFilteredData = allSummaries;
+        
+        // 🔄 切換標籤頁時，完美初始化所有狀態
         renderedCount = 0;
         unseenNewItems = [];
+        newsPointer = 0;
+        itemsSinceTest = 0;
+        itemsSinceAd = 3;
+        itemsSincePromo = 5;
         
         if (container) container.innerHTML = ""; 
         const sentinel = document.getElementById('sentinel');
@@ -379,9 +444,10 @@ async function loadSummaryData() {
     } catch (error) {
         console.error("真實新聞連線失敗，啟動本地快取備援", error);
         try {
-            // ✅ 安全降落：連線失敗時，這台老鐵車依然去讀取真正的舊新聞備份 summaries.json
+            // ✅ 連線失敗備援：依然拿原本的測試檔案 summaries.json 來頂替新聞欄位
             const fallback = await fetch('./data/summaries.json');
             allSummaries = await fallback.json();
+            testTemplates = allSummaries; 
             filterAndRenderData(); 
             if (!observer) setupInfiniteScroll();
         } catch (e) {

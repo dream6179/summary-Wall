@@ -18,7 +18,7 @@ let observer = null;
 
 let newsPointer = 0;            
 let itemsSinceTest = 0;         
-let itemsSinceAd = 24;          // 初始 24 讓第一批必出廣告
+let itemsSinceAd = 24;          
 let itemsSincePromo = 6;        
 
 // ==========================================================================
@@ -88,7 +88,7 @@ function renderCards(dataArray, append = false) {
             </div>
         `;
 
-        // 💡 🌟 【核心雙軌優化】：點擊秒開原始摘要，下方動態生成 AI 專家導讀
+        // 💡 🌟【究極優化】：秒開摘要 + 奈米香蕉動態繪圖 + Gemini 3.5 智囊導讀
         cardElement.addEventListener("click", async () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;
@@ -98,67 +98,67 @@ function renderCards(dataArray, append = false) {
             document.getElementById('modal-source').textContent = item.source;
             document.getElementById('modal-time').textContent = item.time;
             
-            let modalImageHtml = item.image ? `<div class="modal-image-container"><img src="${item.image}" class="modal-image" alt="modal img"></div>` : '';
+            // 🍌 核心黑科技：如果原始新聞「有圖」就用原圖；如果「沒圖」，立刻叫奈米香蕉在線上當場畫一張出來！
+            let modalImageHtml = '';
+            if (item.image) {
+                modalImageHtml = `<div class="modal-image-container"><img src="${item.image}" class="modal-image" alt="modal img"></div>`;
+            } else {
+                // 🚀 如果沒圖，塞入一個特別的動態生圖框，src 直接去戳 Worker 的 aiImageTitle 路由！
+                const bananaGenUrl = `https://news-api.zhtttttt.workers.dev/?aiImageTitle=${encodeURIComponent(item.title)}`;
+                modalImageHtml = `
+                    <div class="modal-image-container" style="background-color:#f1f3f4; position:relative; animation: badgePulse 2s infinite;">
+                        <img src="${bananaGenUrl}" class="modal-image" alt="Banana Gen Art" style="width:100%; height:100%; object-fit:cover;" onload="this.parentElement.style.animation='none'">
+                        <div style="position:absolute; bottom:8px; right:8px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.7rem; padding:4px 8px; border-radius:6px; pointer-events:none;">🍌 奈米香蕉 AI 畫布</div>
+                    </div>
+                `;
+            }
+
             let modalLinkHtml = item.link ? `<div style="margin-top: 24px; text-align: center;"><a href="${item.link}" target="_blank" style="display:inline-block; padding: 10px 20px; background-color: var(--accent-color); color: white; text-decoration: none; border-radius: 8px; font-size: 0.9rem;">閱讀原文</a></div>` : '';
 
-            // 🚀 1. 判斷如果是店長推薦、廣告或測試卡片，直接顯示原有摘要，不發起 AI 請求
             if (item.id.includes('ad-') || item.id.includes('promo-') || item.id.includes('test-')) {
                 document.getElementById('modal-snippet').innerHTML = `${modalImageHtml}<p style="font-size:1.05rem; line-height:1.7; color:var(--text-main); margin-bottom:16px;">${escapeHtml(item.snippet)}</p>${modalLinkHtml}`;
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
             } else {
-                // 🚀 2. 如果是外部常規新聞：【秒開摘要】+【注入動態 AI 導讀面板 + 醒目錯誤免責說明】
+                // 📰 正常外部新聞：【秒開摘要】+【非同步呼叫 Gemini 3.5 Flash 導讀】
                 document.getElementById('modal-snippet').innerHTML = `
                     ${modalImageHtml}
-                    <!-- 💡 第一層：真實原始新聞摘要 (立刻看見，體感秒開) -->
                     <p style="font-size:1.05rem; line-height:1.7; color:var(--text-main); margin-bottom: 24px;">
                         ${escapeHtml(item.snippet)}
                     </p>
                     
-                    <!-- 💡 第二層：高質感 AI 智慧導讀面板 (自帶靜態免責聲明) -->
                     <div id="modal-ai-panel" style="background-color: #f4f8ff; border: 1px solid #e1eefd; border-left: 4px solid var(--accent-color); padding: 18px; border-radius: 12px; margin-bottom: 20px; white-space: normal;">
                         <h4 style="color: var(--accent-color); margin-bottom: 10px; font-size: 1rem; display: flex; align-items: center; gap: 6px;">
-                            <span style="font-size:1.2rem;">🧠</span> AI 專家即時趨勢剖析
+                            <span style="font-size:1.2rem;">🧠</span> Gemini 核心即時趨勢剖析
                         </h4>
-                        
-                        <!-- AI 文字輸出區 (預設放置精美載入動畫) -->
                         <div id="ai-response-box" style="font-size: 0.95rem; color: #3c4043; line-height: 1.6;">
-                            <span style="display:inline-block; animation: badgePulse 1.6s infinite; margin-right: 6px;">⚡</span> 門市 AI 智囊團正在線上進行數據剖析與衍生解讀...
+                            <span style="display:inline-block; animation: badgePulse 1.6s infinite; margin-right: 6px;">⚡</span> 老夥伴 Gemini 正在線上進行數據剖析與衍生解讀...
                         </div>
-                        
-                        <!-- ⚠️ 完美落實：AI 錯誤免責聲明說明 -->
                         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 14px; border-top: 1px dashed #dadce0; padding-top: 10px; line-height: 1.4;">
-                            ⚠️ <strong style="color:#e04040;">模組提示：</strong>本評論區塊由大語言模型自動產出。內容係基於新聞標題進行趨勢推演與市場解讀，僅供輔助參考。AI 評論具有潛在幻覺風險，可能包含非當下實際發生的錯誤數據，請以官方真實公告為準。
+                            ⚠️ <strong>模組提示：</strong>本評論區塊由大語言模型自動產出。內容係基於新聞標題進行趨勢推演與市場解讀，僅供輔助參考。AI 評論具有潛在幻覺風險，可能包含非當下實際發生的錯誤數據，請以官方真實公告為準。
                         </div>
                     </div>
-                    
                     ${modalLinkHtml}
                 `;
                 
-                // 瞬間拉開視窗
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
 
-                // 🚀 3. 非同步向後端發起 AI 導讀請求，載入完成後瞬間抽換文字，完全不卡網頁
                 try {
                     const fetchUrl = `https://news-api.zhtttttt.workers.dev/?aiTitle=${encodeURIComponent(item.title)}&aiSnippet=${encodeURIComponent(item.snippet)}`;
                     const response = await fetch(fetchUrl);
                     const aiCommentary = await response.text();
                     
                     const aiBox = document.getElementById('ai-response-box');
-                    if (aiBox) {
-                        aiBox.textContent = aiCommentary;
-                    }
+                    if (aiBox) aiBox.textContent = aiCommentary;
                 } catch (error) {
                     const aiBox = document.getElementById('ai-response-box');
-                    if (aiBox) {
-                        aiBox.textContent = "AI 智囊團目前連線逾時，請點擊下方閱讀原文按鈕查看完整內容。";
-                    }
+                    if (aiBox) aiBox.textContent = "AI 智囊團目前連線逾時，請點擊下方閱讀原文按鈕查看完整內容。";
                 }
             }
         });
 
-        // 內部按鈕防冒泡綁定
+        // 內部按鈕綁定
         const moreBtn = cardElement.querySelector('.card-more-btn');
         const menu = cardElement.querySelector('.more-menu');
         const dislikeBtn = cardElement.querySelector('.btn-dislike');
@@ -173,20 +173,11 @@ function renderCards(dataArray, append = false) {
             menu.classList.toggle('hidden');
         });
 
-        saveBtn.addEventListener("click", (e) => {
-            e.stopPropagation(); menu.classList.add('hidden');
-            alert(`已將「${item.title}」加入儲存清單！`);
-        });
-
-        dislikeBtn.addEventListener("click", (e) => {
-            e.stopPropagation(); menu.classList.add('hidden');
-            alert(`優化成功，系統將減少推薦「${item.tag}」分類的內容。`);
-        });
-
+        saveBtn.addEventListener("click", (e) => { e.stopPropagation(); menu.classList.add('hidden'); alert(`已將「${item.title}」加入儲存清單！`); });
+        dislikeBtn.addEventListener("click", (e) => { e.stopPropagation(); menu.classList.add('hidden'); alert(`優化成功，系統將減少推薦「${item.tag}」分類的內容。`); });
         hideBtn.addEventListener("click", (e) => {
             e.stopPropagation(); menu.classList.add('hidden');
-            cardElement.style.transition = 'opacity 0.3s, transform 0.3s';
-            cardElement.style.opacity = '0'; cardElement.style.transform = 'scale(0.9)';
+            cardElement.style.transition = 'opacity 0.3s, transform 0.3s'; cardElement.style.opacity = '0'; cardElement.style.transform = 'scale(0.9)';
             setTimeout(() => cardElement.remove(), 300);
         });
 
@@ -340,7 +331,6 @@ function setupEventListeners() {
         });
     }
 
-    // 新聞視窗關閉
     const modal = document.getElementById('article-modal');
     if (modal) {
         const modalClose = modal.querySelector('.modal-close');
@@ -350,7 +340,6 @@ function setupEventListeners() {
         if (modalOverlay) modalOverlay.addEventListener('click', triggerBack);
     }
 
-    // 設定齒輪視窗關閉
     const settingsModal = document.getElementById('settings-modal');
     const settingsBtn = document.getElementById('settings-btn');
     const shareBtn = document.getElementById('settings-share-btn');
@@ -431,7 +420,6 @@ async function loadSummaryData() {
     }
 }
 
-// 📱 全局手機返回雙攔截器
 window.addEventListener('popstate', (event) => {
     const articleModal = document.getElementById('article-modal');
     const settingsModal = document.getElementById('settings-modal');

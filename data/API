@@ -11,13 +11,25 @@ export default {
     }
 
     const { searchParams } = new URL(request.url);
-    const currentTag = searchParams.get('tag') || 'all';
+    
+    // 💡 🚀 【黃金優先路由】：如果偵測到 params 帶有 fetchUrl，代表使用者點開了卡片，啟動即時爬蟲！
+    const fetchUrl = searchParams.get('fetchUrl');
+    if (fetchUrl) {
+      const browserHeader = { 
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" 
+      };
+      const fullText = await scrapeFullText(fetchUrl, browserHeader);
+      return new Response(fullText, {
+        headers: { "Content-Type": "text/plain; charset=utf-8", ...corsHeaders }
+      });
+    }
 
+    // 📰 【常規路由】：原本的輕量級 RSS 智慧混流發牌
+    const currentTag = searchParams.get('tag') || 'all';
     const browserHeader = { 
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" 
     };
 
-    // 💡 終極鋼鐵陣容：全面換裝 100% 實測暢通、絕不鎖 IP 的大廠與開放 CMS 渠道
     const sources = {
       "cna": { url: "https://feeds.feedburner.com/cnaFirstNews", name: "中央通訊社", tag: "焦點新聞" },
       "tech": { url: "https://technews.tw/feed/", name: "科技新報 TechNews", tag: "科技新知" },
@@ -29,40 +41,30 @@ export default {
       let finalItems = [];
 
       if (currentTag === "all" || currentTag === "全部摘要") {
-        // 多核心並行抓取
         const fetchPromises = Object.keys(sources).map(async (key) => {
           try {
             const res = await fetch(sources[key].url, { headers: browserHeader });
             if (!res.ok) return [];
             const xml = await res.text();
             return parseRssToJSON(xml, sources[key].name, sources[key].tag);
-          } catch (e) {
-            return []; 
-          }
+          } catch (e) { return []; }
         });
 
         const results = await Promise.all(fetchPromises);
-
-        // 荷蘭式圓桌輪流發牌演算法（完美交叉打散內容）
         const maxLength = Math.max(...results.map(arr => arr.length));
         for (let i = 0; i < maxLength; i++) {
           for (let j = 0; j < results.length; j++) {
-            if (results[j][i]) {
-              finalItems.push(results[j][i]);
-            }
+            if (results[j][i]) finalItems.push(results[j][i]);
           }
         }
-
       } else {
-        // 單一分類頁籤篩選分支
-        let selected = sources.cna; // 預設走中央社焦點新聞
-
+        let selected = sources.cna; 
         if (currentTag === "遊戲情報" || currentTag === "game") { selected = sources.game; }
         else if (currentTag === "科技新知" || currentTag === "tech") { selected = sources.tech; }
         else if (currentTag === "財經新聞" || currentTag === "stock") { selected = sources.stock; }
 
         const response = await fetch(selected.url, { headers: browserHeader });
-        if (!response.ok) throw new Error(`${selected.name} 伺服器異常，狀態碼: ${response.status}`);
+        if (!response.ok) throw new Error(`${selected.name} 伺服器異常`);
         const xmlText = await response.text();
         finalItems = parseRssToJSON(xmlText, selected.name, selected.tag);
       }
@@ -76,15 +78,12 @@ export default {
       });
 
     } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 500,
-        headers: corsHeaders,
-      });
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
     }
   }
 };
 
-// 🧙‍♂️ 終極強韌 XML 解析引擎 - 圖片解鎖版
+// 🧙‍♂️ 輕量 RSS 解析器（把列表內文還原為清爽的 120 字縮圖版）
 function parseRssToJSON(xmlText, sourceName, defaultTagName) {
   const items = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/g;
@@ -92,34 +91,21 @@ function parseRssToJSON(xmlText, sourceName, defaultTagName) {
 
   while ((match = itemRegex.exec(xmlText)) !== null) {
     const itemContent = match[1];
-    
     const titleMatch = itemContent.match(/<title>[\s\S]*?(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]+))[\s\S]*?<\/title>/);
     let title = titleMatch ? (titleMatch[1] || titleMatch[2] || "") : "";
-    
     const linkMatch = itemContent.match(/<link>[\s\S]*?(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]+))[\s\S]*?<\/link>/);
     let link = linkMatch ? (linkMatch[1] || linkMatch[2] || "") : "";
-    
     const descMatch = itemContent.match(/<description>[\s\S]*?(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]+))[\s\S]*?<\/description>/);
     let description = descMatch ? (descMatch[1] || descMatch[2] || "") : "";
-    
     const pubDateMatch = itemContent.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
     const pubDate = pubDateMatch ? pubDateMatch[1] : "";
 
-    // 💡 🌟 核心新增：在清洗 HTML 標籤前，先把隱藏的圖片網址撈出來！
     let imageUrl = "";
-    // 做法 1：從標準的 media:content 或 enclosure 標籤撈網址 (Yahoo 股市常用)
-    const mediaMatch = itemContent.match(/<(media:content|enclosure)[^>]+url=["']([^"']+)["']/);
-    // 做法 2：從 description 內嵌的 <img> 標籤撈 src (科技新報常用)
-    const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/);
+    const mediaMatch = itemContent.match(/<(media:content|media:thumbnail|enclosure)[^>]+url=["']([^"']+)["']/i);
+    const imgMatch = itemContent.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (mediaMatch) imageUrl = mediaMatch[2]; else if (imgMatch) imageUrl = imgMatch[1];
 
-    if (mediaMatch) {
-      imageUrl = mediaMatch[2];
-    } else if (imgMatch) {
-      imageUrl = imgMatch[1];
-    }
-
-    let timestamp = 0;
-    let displayTime = "今日";
+    let timestamp = 0; let displayTime = "今日";
     if (pubDate) {
       try {
         const dateObj = new Date(pubDate.trim());
@@ -138,13 +124,56 @@ function parseRssToJSON(xmlText, sourceName, defaultTagName) {
       isFeatured: false,
       isImportant: items.length < 2,
       title: title.trim(),
-      snippet: cleanSnippet.substring(0, 120) + (cleanSnippet.length > 120 ? "..." : ""),
+      snippet: cleanSnippet.substring(0, 120) + (cleanSnippet.length > 120 ? "..." : ""), 
       source: sourceName, 
       time: displayTime,
       link: link.trim(),
       timestamp: timestamp,
-      image: imageUrl // 💡 成功打包圖片網址，丟給前端的全新欄位！
+      image: imageUrl 
     });
   }
   return items;
+}
+
+// 🕷️ 核心新武器：動態網頁特徵長文擷取引擎
+async function scrapeFullText(targetUrl, browserHeader) {
+  try {
+    const res = await fetch(targetUrl, { headers: browserHeader });
+    if (!res.ok) return "無法直接載入原文，請點擊下方「閱讀原文」按鈕前往瀏覽。";
+    
+    const html = await res.text();
+    let mainText = "";
+
+    if (targetUrl.includes("technews.tw")) {
+      // 🏛️ 科技新報精準雷達
+      const contentMatch = html.match(/<div class="entry-content">([\s\S]*?)<\/div>/i);
+      if (contentMatch) {
+        const paragraphs = contentMatch[1].match(/<p[^>]*>([\s\S]*?)<\/p>/g);
+        if (paragraphs) mainText = paragraphs.map(p => p.replace(/<[^>]*>/g, '').trim()).filter(Boolean).join('\n\n');
+      }
+    } else if (targetUrl.includes("cna.com.tw")) {
+      // 🏛️ 中央社精準雷達
+      const paragraphs = html.match(/<div class="paragraph">([\s\S]*?)<\/div>/g);
+      if (paragraphs) mainText = paragraphs.map(p => p.replace(/<[^>]*>/g, '').trim()).filter(Boolean).join('\n\n');
+    } else if (targetUrl.includes("yahoo.com")) {
+      // 🏛️ Yahoo 股市精準雷達
+      const paragraphs = html.match(/<p class="caas-p">([\s\S]*?)<\/p>/g);
+      if (paragraphs) mainText = paragraphs.map(p => p.replace(/<[^>]*>/g, '').trim()).filter(Boolean).join('\n\n');
+    }
+
+    // 🛡️ 終極通用防禦：如果沒對中網域特徵，暴力抓取全網頁所有超過 20 字的標準段落 <p>
+    if (!mainText) {
+      const fallbackPs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi);
+      if (fallbackPs) {
+        mainText = fallbackPs
+          .map(p => p.replace(/<[^>]*>/g, '').trim())
+          .filter(t => t.length > 20 && !t.includes("瀏覽器") && !t.includes("版權所有")) 
+          .join('\n\n');
+      }
+    }
+
+    return mainText ? mainText.trim() : "擷取完成，但該網頁未能分離出有效純文字段落。";
+  } catch (e) {
+    return "連線逾時或對方伺服器拒絕抓取，建議點擊下方「閱讀原文」直接前往。";
+  }
 }

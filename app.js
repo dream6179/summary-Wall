@@ -165,10 +165,16 @@ function renderCards(dataArray, append = false) {
                     
                     const aiBox = document.getElementById('ai-response-box');
                     
-                    // 🧙‍♂️ 抽離排版大師過濾器，確保雙軌都能完美排版
+                    // 🧙‍♂️ 賽博通用渲染組裝濾網（已升級萬能標準化清洗器）
                     const renderAiOutput = (text) => {
                         if (!aiBox || !text) return;
-                        const paragraphs = text.split('\n\n');
+                        
+                        // 🎯 核心自癒：管它是真實換行、字面量 \n 還是被攔腰折斷的碎片，通通揉碎標準化為真實的雙換行！
+                        const normalizedText = text
+                            .replace(/\\n/g, '\n')       // 把字面上的 \n 殘渣還原成真實換行
+                            .replace(/\n{3,}/g, '\n\n');  // 防禦性收攏，避免空行過多拉出大白邊
+                        
+                        const paragraphs = normalizedText.split('\n\n');
                         const finalHtml = paragraphs.map(p => {
                             if (!p.trim()) return '';
                             let cleanText = escapeHtml(p.trim()).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');

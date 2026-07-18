@@ -1,56 +1,87 @@
-// 1. 模擬資料 (Mock Data) - 未來可以直接換成 fetch(API) 的結果
-const mockSummaries = [
-    {
-        id: 1,
-        tag: "焦點新聞",
-        isFeatured: true, // 控制是否為大圖焦點排版
-        isImportant: true,
-        title: "探討未來科技趨勢：AI 代理與邊緣運算的全新整合方案",
-        snippet: "隨著硬體效能的突破，新一代 AI 代理服務正逐步轉移至終端設備運行，這不僅大大幅降低了雲端傳輸的延遲，更為個人隱私提供了層防護，未來這項技術將深入穿戴式裝置與智慧家居中。",
-        source: "科技新報",
-        time: "15 分鐘前"
-    },
-    {
-        id: 2,
-        tag: "社群動態",
-        isFeatured: false,
-        isImportant: false,
-        title: "開源社群舉辦黑客松，吸引超過五百位開發者線上共襄盛舉",
-        snippet: "本次黑客松以「自動化與生活生產力」為主題，參賽團隊利用各式 Serverless 工具在短短 48 小時內打造出多款極具創新的自動化流程腳本。",
-        source: "技術週刊",
-        time: "2 小時前"
-    },
-    {
-        id: 3,
-        tag: "遊戲資訊",
-        isFeatured: false,
-        isImportant: false,
-        title: "知名開放世界遊戲迎來重大版本更新，全新地圖細節與生態系公開",
-        snippet: "開發團隊在今天的直播中展示了新地區的實機畫面。除了新增獨特的解謎機制外，也對既有的戰隊搭配與元素傷害計算公式進行了最佳化調整，大幅提升流暢度。",
-        source: "電玩情報站",
-        time: "5 小時前"
-    },
-    {
-        id: 4,
-        tag: "日常筆記",
-        isFeatured: false,
-        isImportant: false,
-        title: "高效能前端專案託管指南：為什麼你該試試 Cloudflare Pages？",
-        snippet: "對於純 HTML/CSS/JS 的專案來說，利用邊緣網路託管不僅部署速度極快，還能原生整合 Worker 提供輕量級 API 後端，是現代開發者的首選方案。",
-        source: "個人網誌",
-        time: "昨天"
-    },
-    {
-        id: 5,
-        tag: "開發進度",
-        isFeatured: false,
-        isImportant: true,
-        title: "專案里程碑更新：摘要牆基礎框架與 JS 動態渲染邏輯建置完成",
-        snippet: "成功將前端畫面與資料層解耦（Decoupling）。目前已達成透過資料陣列驅動 UI 的目標，下一步將規劃與後端資料庫或自動化排程腳本進行對接測試。",
-        source: "本地日誌",
-        time: "剛剛"
+// 1. 核心功能：將資料渲染至摘要牆 (維持不變)
+function renderSummaryWall(dataArray) {
+    const container = document.getElementById("wall-container");
+    if (!container) return;
+    container.innerHTML = "";
+
+    if (dataArray.length === 0) {
+        container.innerHTML = `<div class="loading-text">目前沒有任何摘要資訊。</div>`;
+        return;
     }
-];
+
+    dataArray.forEach(item => {
+        const cardElement = document.createElement("article");
+        cardElement.classList.add("card");
+        if (item.isFeatured) cardElement.classList.add("featured");
+
+        const tagClass = item.isImportant ? "card-tag font-important" : "card-tag";
+
+        cardElement.innerHTML = `
+            <div class="${tagClass}">${escapeHtml(item.tag)}</div>
+            <h2 class="card-title">${escapeHtml(item.title)}</h2>
+            <p class="card-snippet">${escapeHtml(item.snippet)}</p>
+            <div class="card-meta">
+                <span class="source">${escapeHtml(item.source)}</span>
+                <span class="divider">•</span>
+                <span class="time">${escapeHtml(item.time)}</span>
+            </div>
+        `;
+
+        cardElement.addEventListener("click", () => {
+            console.log(`點擊了摘要卡片 ID: ${item.id}`);
+        });
+
+        container.appendChild(cardElement);
+    });
+}
+
+// 2. 新增：非同步抓取本地 JSON 資料的函式
+async function loadSummaryData() {
+    const container = document.getElementById("wall-container");
+    
+    try {
+        // 讀取剛剛建立的 json 檔案
+        const response = await fetch('./data/summaries.json');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`);
+        }
+        
+        // 解析成 JS 陣列物件
+        const data = await response.json();
+        
+        // 呼叫渲染函式
+        renderSummaryWall(data);
+        
+    } catch (error) {
+        console.error("讀取資料失敗:", error);
+        if (container) {
+            container.innerHTML = `<div class="loading-text" style="color: #ea4335;">資料載入失敗，請確認 data/summaries.json 路徑與格式是否正確。</div>`;
+        }
+    }
+}
+
+// 3. 工具小函式 (維持不變)
+function escapeHtml(string) {
+    return String(string).replace(/[&<>"']/g, s => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[s]));
+}
+
+function updateRefreshTime() {
+    const timeSpan = document.getElementById("update-time");
+    if (timeSpan) {
+        const now = new Date();
+        timeSpan.textContent = `今天 ${now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })} 已更新`;
+    }
+}
+
+// 4. 初始化
+document.addEventListener("DOMContentLoaded", () => {
+    loadSummaryData(); // 改呼叫這個會去 fetch 資料的函式
+    updateRefreshTime();
+});
+
 
 // 2. 更新頂部導覽列的時間（模擬即時重新整理）
 function updateRefreshTime() {

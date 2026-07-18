@@ -158,28 +158,66 @@ function renderCards(dataArray, append = false) {
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
 
-                // 🚀 呼叫後端解禁的 Gemini 3.5 Flash 戰略長大腦
+                // 🚀 ✅ 完美大升級：解鎖前端 ReadableStream 串流讀取器與即時排版核心
                 try {
                     const fetchUrl = `https://news-api.zhtttttt.workers.dev/?aiTitle=${encodeURIComponent(item.title)}&aiSnippet=${encodeURIComponent(item.snippet)}`;
                     const response = await fetch(fetchUrl);
-                    const aiCommentary = await response.text();
+                    
+                    // 🧙‍♂️ 建立數據串流管道讀取器
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let accumulatedText = ""; // 存放解碼後的純文字本體
+                    let rawBuffer = "";        // 存放未處理完的原始 JSON 碎片
                     
                     const aiBox = document.getElementById('ai-response-box');
-                    if (aiBox) {
-                        // 🧙‍♂️ 賽博排版大師：完美切分段落並渲染粗體 <strong> 小標題
-                        const paragraphs = aiCommentary.split('\n\n');
-                        const finalHtml = paragraphs.map(p => {
-                            if (!p.trim()) return '';
-                            let cleanText = escapeHtml(p.trim()).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                            return `<p>${cleanText}</p>`;
-                        }).join('');
+                    if (aiBox) aiBox.innerHTML = ""; // 點開瞬間立刻清空原本的「載入中」提示
+                    
+                    // 🔄 開啟無限迴圈，只要後端有噴碎片，前端就當場抓住！
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break; // 後端噴完了，功德圓滿退出迴圈
                         
-                        aiBox.innerHTML = finalHtml;
+                        // 拼接原始二進位制碎片
+                        rawBuffer += decoder.decode(value, { stream: true });
+                        
+                        // 🎯 賽博緩衝過濾器：用高精準 Regex 捕捉 Google 標準流中的 "text": "..." 欄位
+                        const regex = /"text":\s*"((?:[^"\\]|\\.)*)"/g;
+                        let match;
+                        let lastIndex = 0;
+                        
+                        while ((match = regex.exec(rawBuffer)) !== null) {
+                            let extractedTarget = match[1];
+                            try {
+                                // 利用原生 JSON 解析器安全地將轉義字元（如 \n, \"）還原成實體文字
+                                accumulatedText += JSON.parse(`"${extractedTarget}"`);
+                            } catch (e) {
+                                // 萬一遇到半路切斷的殘缺字元，使用防禦性替換備援
+                                accumulatedText += extractedTarget.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+                            }
+                            lastIndex = regex.lastIndex;
+                        }
+                        
+                        // 🚀 關鍵優化：將已經處理過的安全字串切掉，緩衝區只保留可能被攔腰斬斷的末尾碎片
+                        if (lastIndex > 0) {
+                            rawBuffer = rawBuffer.slice(lastIndex);
+                        }
+                        
+                        // 🎨 🌟 即時排版大師：只要有新字跑出來，當場動態組裝 HTML 段落與粗體藍標題！
+                        if (aiBox && accumulatedText) {
+                            const paragraphs = accumulatedText.split('\n\n');
+                            const finalHtml = paragraphs.map(p => {
+                                if (!p.trim()) return '';
+                                let cleanText = escapeHtml(p.trim()).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                                return `<p>${cleanText}</p>`;
+                            }).join('');
+                            
+                            aiBox.innerHTML = finalHtml;
+                        }
                     }
                 } catch (error) {
                     const aiBox = document.getElementById('ai-response-box');
                     if (aiBox) {
-                        aiBox.innerHTML = `<p>AI 智囊團目前連線逾時，請點擊下方閱讀原文按鈕查看完整內容。</p>`;
+                        aiBox.innerHTML = `<p>AI 智囊團目前連線外洩或逾時，請點擊下方閱讀原文按鈕查看完整內容。</p>`;
                     }
                 }
             }

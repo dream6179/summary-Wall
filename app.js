@@ -46,7 +46,6 @@ function renderCards(dataArray, append = false) {
         const isNew = item.isNewData ? "font-important" : "";
         const tagClass = item.isImportant ? "card-tag font-important" : `card-tag ${isNew}`;
 
-        // ✅ 完美修復：完整補回被省略的 SVG 與選單按鈕結構
         cardElement.innerHTML = `
             <!-- 右上角點點按鈕 -->
             <button class="card-more-btn" title="更多選項">
@@ -125,10 +124,9 @@ function renderCards(dataArray, append = false) {
             document.getElementById('modal-snippet').innerHTML = modalBodyHtml;
             modal.classList.remove('hidden');
 
-            // 💡 🌟 核心修正：打開彈窗時，往瀏覽器歷史紀錄推一個虛擬狀態，標記彈窗現在開著
+            // 💡 🌟 打開彈窗時，向瀏覽器歷史紀錄推一個虛擬狀態
             history.pushState({ modalOpen: true }, '');
         });
-
 
         // 節點綁定與事件防冒泡
         const moreBtn = cardElement.querySelector('.card-more-btn');
@@ -408,8 +406,7 @@ function setupEventListeners() {
         const modalClose = modal.querySelector('.modal-close');
         const modalOverlay = modal.querySelector('.modal-overlay');
         
-        // 💡 🌟 核心修正：點擊 X 或遮罩時，我們不直接關彈窗，而是觸發瀏覽器「返回」
-        // 這樣會直接驚動下方的 popstate 監聽器來統一收尾，邏輯最乾淨！
+        // 💡 點擊 X 或遮罩時，我們不直接關彈窗，而是觸發瀏覽器「返回」消耗掉虛擬紀錄
         const triggerBack = () => {
             if (!modal.classList.contains('hidden')) {
                 history.back();
@@ -419,7 +416,7 @@ function setupEventListeners() {
         if (modalClose) modalClose.addEventListener('click', triggerBack);
         if (modalOverlay) modalOverlay.addEventListener('click', triggerBack);
     }
-
+} // ✅ 完美歸位：成功補上這個閉合大括號，把 Section 6 劃下完美句點！
 
 // ==========================================================================
 // 7. 工具函式與資料載入入口
@@ -481,7 +478,8 @@ async function loadSummaryData() {
         }
     }
 }
-    // ==========================================================================
+
+// ==========================================================================
 // 💡 🌟 終極防禦：手機實體返回鍵 / 側滑返回手勢的完美攔截器
 // ==========================================================================
 window.addEventListener('popstate', (event) => {
@@ -492,7 +490,6 @@ window.addEventListener('popstate', (event) => {
         modal.classList.add('hidden'); // 那就把返回的預設行為，改成「關閉彈窗」！
     }
 });
-
 
 document.addEventListener("DOMContentLoaded", () => {
     loadSummaryData();

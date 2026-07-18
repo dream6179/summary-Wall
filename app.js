@@ -165,14 +165,27 @@ function renderCards(dataArray, append = false) {
                     
                     const aiBox = document.getElementById('ai-response-box');
                     
-                    // 🧙‍♂️ 賽博通用渲染組裝濾網（已升級萬能標準化清洗器）
+                    // 🧙‍♂️ 賽博通用渲染組裝濾網（已加裝全自動思維漂白攔截器）
                     const renderAiOutput = (text) => {
                         if (!aiBox || !text) return;
                         
-                        // 🎯 核心自癒：管它是真實換行、字面量 \n 還是被攔腰折斷的碎片，通通揉碎標準化為真實的雙換行！
-                        const normalizedText = text
-                            .replace(/\\n/g, '\n')       // 把字面上的 \n 殘渣還原成真實換行
-                            .replace(/\n{3,}/g, '\n\n');  // 防禦性收攏，避免空行過多拉出大白邊
+                        let normalizedText = text;
+
+                        // 🚨 💥【終極物理防線】：若發現 Gemma 頑固夾帶英文思考草稿，當場把第一個中文標題前的垃圾切碎
+                        if (/[A-Za-z\s]+:/.test(normalizedText) && /[\u4e00-\u9fa5]/.test(normalizedText)) {
+                            const firstChineseChar = normalizedText.search(/[\u4e00-\u9fa5]/);
+                            if (firstChineseChar !== -1) {
+                                const prefixText = normalizedText.substring(0, firstChineseChar);
+                                const titleStart = prefixText.lastIndexOf('**');
+                                // 完美保留標題的粗體引導星號，把前面的英文草稿瞬間人間蒸發
+                                normalizedText = titleStart !== -1 ? normalizedText.substring(titleStart) : normalizedText.substring(firstChineseChar);
+                            }
+                        }
+                        
+                        // 🎯 核心自癒：清洗換行殘渣
+                        normalizedText = normalizedText
+                            .replace(/\\n/g, '\n')
+                            .replace(/\n{3,}/g, '\n\n');
                         
                         const paragraphs = normalizedText.split('\n\n');
                         const finalHtml = paragraphs.map(p => {

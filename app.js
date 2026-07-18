@@ -480,18 +480,19 @@ async function loadSummaryData() {
 }
 
 // ==========================================================================
-// 💡 🌟 終極防禦：手機實體返回鍵 / 側滑返回手勢的完美攔截器
+// 💡 🌟 終極防禦：手機實體返回鍵 / 側滑返回手勢的完美雙攔截器
 // ==========================================================================
 window.addEventListener('popstate', (event) => {
-    const modal = document.getElementById('article-modal');
+    const articleModal = document.getElementById('article-modal');
+    const settingsModal = document.getElementById('settings-modal');
     
-    // 如果偵測到使用者按了返回（上一頁），且此時我們的彈出視窗是「開啟」的
-    if (modal && !modal.classList.contains('hidden')) {
-        modal.classList.add('hidden'); // 那就把返回的預設行為，改成「關閉彈窗」！
+    // 如果返回時新聞彈窗開著，關掉它
+    if (articleModal && !articleModal.classList.contains('hidden')) {
+        articleModal.classList.add('hidden');
     }
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-    loadSummaryData();
-    setupEventListeners();
+    
+    // 如果返回時設定彈窗開著，也關掉它
+    if (settingsModal && !settingsModal.classList.contains('hidden')) {
+        settingsModal.classList.add('hidden');
+    }
 });

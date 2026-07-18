@@ -152,11 +152,17 @@ function simulateLiveUpdates() {
 }
 
 // 事件監聽與其他工具函式
+// 修改後的監聽器函式
 function setupEventListeners() {
     const searchInput = document.getElementById('search-input');
     const clearSearchBtn = document.getElementById('clear-search');
     const tabsContainer = document.getElementById('filter-tabs-container');
+    
+    // 💡 取得新增的按鈕與紅點元素
+    const bttBtn = document.getElementById('back-to-top');
+    const badge = document.getElementById('new-data-badge');
 
+    // A. 監聽搜尋與分類 (維持原本邏輯)
     searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value;
         searchQuery.length > 0 ? clearSearchBtn.classList.remove('hidden') : clearSearchBtn.classList.add('hidden');
@@ -179,7 +185,66 @@ function setupEventListeners() {
         currentTag = clickedTab.dataset.tag;
         filterAndRenderData();
     });
+
+    // 💡 B. 監聽視窗滾動：超過一定高度才顯示回到頂部按鈕
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 400) {
+            bttBtn.classList.remove('hidden');
+        } else {
+            bttBtn.classList.add('hidden');
+        }
+    });
+
+    // 💡 C. 點擊按鈕：平滑滾動回頂端，並清除新資料紅點
+    bttBtn.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth' // 原生平滑滾動
+        });
+        badge.classList.add('hidden'); // 清除紅點
+    });
 }
+
+// 修改後的模擬推播函式（讓它與紅點連動）
+function simulateLiveUpdates() {
+    setInterval(() => {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        const newItem = {
+            id: Date.now(),
+            tag: "焦點新聞",
+            isFeatured: false,
+            isImportant: true,
+            isNewData: true,
+            title: `【即時更新】來自邊緣伺服器的新動態 (${timeString})`,
+            snippet: "這是一筆剛剛由系統自動推播進來的新資料。我們透過佇列設計，成功將它穿插進你正在往下滾動的瀑布流之中！",
+            source: "系統推播中心",
+            time: "剛剛"
+        };
+        
+        allSummaries.unshift(newItem);
+        
+        let matchFilter = true;
+        if (currentTag !== 'all' && newItem.tag !== currentTag) matchFilter = false;
+        if (searchQuery !== '') matchFilter = false;
+        
+        if (matchFilter) {
+            currentFilteredData.unshift(newItem);
+            unseenNewItems.push(newItem);
+            
+            document.getElementById("update-time").textContent = `今天 ${timeString} 已更新`;
+
+            // 💡 新增：當有新資料進來時，如果使用者正點在往下滾，亮起紅點提示
+            const badge = document.getElementById('new-data-badge');
+            if (badge && window.scrollY > 200) {
+                badge.classList.remove('hidden');
+            }
+        }
+        
+    }, 12000); 
+}
+
 
 function escapeHtml(string) {
     return String(string).replace(/[&<>"']/g, s => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));

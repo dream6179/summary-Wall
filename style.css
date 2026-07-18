@@ -478,13 +478,16 @@ body {
    ========================================================================== */
 
 /* 卡片圖片外框：強制 16:9 黃金比例，裁切超出的部分 */
+./* 卡片圖片外框：完美吃掉卡片內邊距，實現大廠級滿版貼邊 */
 .card-image-container {
-    width: 100%;
+    width: calc(100% + 40px);       /* 左右兩側各往外吐出 20px padding */
+    margin: -20px -20px 16px -20px; /* 向上吃掉 20px，左右吃掉 20px，下方留出與文字的間距 */
     aspect-ratio: 16 / 9;
     overflow: hidden;
     background-color: #f1f3f4;
-    margin-bottom: 12px;
+    border-radius: 16px 16px 0 0;   /* 💡 核心：只有左上、右上是圓角，完美貼合卡片外框 */
 }
+
 
 /* 圖片本體：滿版鋪滿，並加入絲滑的放大縮小過渡動畫 */
 .card-image {

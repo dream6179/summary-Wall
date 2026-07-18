@@ -158,14 +158,13 @@ function renderCards(dataArray, append = false) {
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
 
-                // 🚀 ✅ 滿血大升級：解鎖前端 ReadableStream 串流打字機讀取核心
                 // 🚀 ✅ 終極相容大升級：解鎖前端 ReadableStream 串流讀取器（自帶 iOS 閹割 WebView 降級防禦）
                 try {
                     const fetchUrl = `https://news-api.zhtttttt.workers.dev/?aiTitle=${encodeURIComponent(item.title)}&aiSnippet=${encodeURIComponent(item.snippet)}`;
                     const response = await fetch(fetchUrl);
                     
                     const aiBox = document.getElementById('ai-response-box');
-                    if (aiBox) aiBox.innerHTML = ""; // 點開瞬間立刻清空提示
+                    if (aiBox) aiBox.innerHTML = ""; 
                     
                     // 🧙‍♂️ 賽博通用渲染組裝濾網（抽離成獨立邏輯，方便雙軌共用）
                     const renderAiOutput = (text) => {
@@ -182,7 +181,7 @@ function renderCards(dataArray, append = false) {
                     // 🚨 💥【iPhone 降級防禦核心】：如果遇到 iOS 內嵌瀏覽器封鎖了 body 串流
                     if (!response.body || typeof response.body.getReader !== 'function') {
                         console.log("偵測到 iPhone WebView 限制環境，啟動高速全量加載安全通道...");
-                        const fullText = await response.text(); // 暴力直接讀取整包文字
+                        const fullText = await response.text(); 
                         
                         let accumulatedFallbackText = "";
                         const fallbackRegex = /"text":\s*"((?:[^"\\]|\\.)*)"/g;
@@ -194,8 +193,8 @@ function renderCards(dataArray, append = false) {
                             catch (e) { accumulatedFallbackText += extracted.replace(/\\n/g, '\n').replace(/\\"/g, '"'); }
                         }
                         
-                        renderAiOutput(accumulatedFallbackText); // 瞬間一次到位渲染，絕不卡死！
-                        return; // 完美功德圓滿，安全退出
+                        renderAiOutput(accumulatedFallbackText); 
+                        return; 
                     }
 
                     // 🔄 常規高速軌道：適用於支援標準 WebStream 的現代瀏覽器 (桌機、Android、原生 Safari)
@@ -228,7 +227,7 @@ function renderCards(dataArray, append = false) {
                         }
                         
                         if (accumulatedText) {
-                            renderAiOutput(accumulatedText); // 邊跑邊打字排版
+                            renderAiOutput(accumulatedText); 
                         }
                     }
                 } catch (error) {
@@ -237,6 +236,8 @@ function renderCards(dataArray, append = false) {
                         aiBox.innerHTML = `<p>AI 智囊團目前連線外洩或逾時，請點擊下方閱讀原文按鈕查看完整內容。</p>`;
                     }
                 }
+            }
+        });
 
         // 按鈕監聽防冒泡
         const moreBtn = cardElement.querySelector('.card-more-btn');
@@ -349,7 +350,6 @@ function filterAndRenderData() {
 // 5. 💡 🌟【真實對接更新】：每小時在背景連線一次 Worker 抓取真新聞
 // ==========================================================================
 function simulateLiveUpdates() {
-    // 1小時 = 60分 * 60秒 * 1000毫秒 = 3,600,000 ms
     setInterval(async () => {
         if (allSummaries.length === 0) return;
         
@@ -361,27 +361,22 @@ function simulateLiveUpdates() {
             
             let brandNewItems = [];
             freshNews.forEach(newItem => {
-                // 🕵️‍♂️ 嚴格核對：檢查新抓進來的文章標題是否已經存在於目前的列表裡
                 const exists = allSummaries.some(oldItem => oldItem.title === newItem.title);
                 if (!exists) {
                     newItem.isNewData = true;
-                    newItem.time = "剛剛"; // 標註為熱騰騰剛出爐的資訊
+                    newItem.time = "剛剛"; 
                     brandNewItems.push(newItem);
                 }
             });
 
-            // 📢 如果真的在世界線上有發現最新的實體 RSS 新聞，立刻在前端推播氣泡！
             if (brandNewItems.length > 0) {
-                // 將新文章塞入記憶體陣列的最頂端
                 allSummaries = [...brandNewItems, ...allSummaries];
                 
-                // 優先在 currentFilteredData 最前方注入，並加進未讀緩衝區
                 brandNewItems.forEach(item => {
                     currentFilteredData.unshift(item);
                     unseenNewItems.push(item);
                 });
 
-                // 喚醒螢幕上方的「✨ 新推播」浮動通知氣泡
                 const badge = document.getElementById('new-data-badge');
                 if (badge) { badge.classList.remove('hidden'); }
             }
@@ -564,5 +559,5 @@ window.addEventListener('popstate', (event) => {
 document.addEventListener("DOMContentLoaded", () => {
     loadSummaryData();
     setupEventListeners();
-    simulateLiveUpdates(); // 正式在背景點火啟動每小時真實抓取核心！
+    simulateLiveUpdates(); 
 });

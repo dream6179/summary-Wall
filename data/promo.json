@@ -1,5 +1,55 @@
 [
   {
+    "id": "p-1",
+    "tag": "生活風格",
+    "isFeatured": false,
+    "isImportant": false,
+    "title": "微波加熱食物留孔洞",
+    "snippet": "加熱剩飯時，將中間挖出一個洞，呈現甜甜圈狀，受熱會更均勻。",
+    "source": "生活小技巧",
+    "time": "現在"
+  },
+  {
+    "id": "p-2",
+    "tag": "生活風格",
+    "isFeatured": false,
+    "isImportant": false,
+    "title": "運用手機拍照記位置",
+    "snippet": "停車後立刻拍下車位號碼與周圍柱子，找車時能節省大量時間。",
+    "source": "生活小技巧",
+    "time": "現在"
+  },
+  {
+    "id": "p-3",
+    "tag": "生活風格",
+    "isFeatured": false,
+    "isImportant": false,
+    "title": "橡皮筋防止衣服滑落",
+    "snippet": "在木質或塑膠衣架的兩端各套上一根橡皮筋，能增加阻力防止衣服滑落。",
+    "source": "生活小技巧",
+    "time": "現在"
+  },
+  {
+    "id": "p-4",
+    "tag": "生活風格",
+    "isFeatured": false,
+    "isImportant": false,
+    "title": "長途旅行前拍照存證",
+    "snippet": "出國前將護照、簽證及重要證件拍照存手機，並備份至雲端以防遺失。",
+    "source": "生活小技巧",
+    "time": "現在"
+  },
+  {
+    "id": "p-5",
+    "tag": "生活風格",
+    "isFeatured": false,
+    "isImportant": false,
+    "title": "運用倒數計時器抗拖延",
+    "snippet": "大腦抗拒複雜任務時，設定20分鐘倒數，告訴自己「只做20分鐘就停」，通常只要開始了就會持續做完。",
+    "source": "生活小技巧",
+    "time": "現在"
+  },
+  {
     "id": "ad-lts",
         "tag": "生活風格",
         "isFeatured": false,

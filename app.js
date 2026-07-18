@@ -95,9 +95,17 @@ function renderCards(dataArray, append = false) {
 
         // 點擊詳細視窗 (保持原汁原味的秒開摘要 + 點擊後不重複生圖)
         // 💡 🌟【微距緊湊優化版】：點擊秒開原始摘要，強制重設瀏覽器預設邊距
+        // 💡 🌟【微距緊湊優化版】：點擊秒開原始摘要，強制重設瀏覽器預設邊距
         cardElement.addEventListener("click", async () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;
+            
+            // 🚀【終極救磚：置頂魔術】：每次一打開，不管三七二十一，強制所有滾動容器全部滾回最頂端！
+            modal.scrollTop = 0; 
+            const modalContent = modal.querySelector('.modal-content');
+            if (modalContent) modalContent.scrollTop = 0;
+            const modalSnippetContainer = document.getElementById('modal-snippet');
+            if (modalSnippetContainer) modalSnippetContainer.scrollTop = 0;
             
             document.getElementById('modal-tag').textContent = item.tag;
             document.getElementById('modal-title').textContent = item.title;

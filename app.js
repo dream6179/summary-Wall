@@ -407,12 +407,19 @@ function setupEventListeners() {
     if (modal) {
         const modalClose = modal.querySelector('.modal-close');
         const modalOverlay = modal.querySelector('.modal-overlay');
-        const closeModal = () => modal.classList.add('hidden');
         
-        if (modalClose) modalClose.addEventListener('click', closeModal);
-        if (modalOverlay) modalOverlay.addEventListener('click', closeModal);
+        // 💡 🌟 核心修正：點擊 X 或遮罩時，我們不直接關彈窗，而是觸發瀏覽器「返回」
+        // 這樣會直接驚動下方的 popstate 監聽器來統一收尾，邏輯最乾淨！
+        const triggerBack = () => {
+            if (!modal.classList.contains('hidden')) {
+                history.back();
+            }
+        };
+        
+        if (modalClose) modalClose.addEventListener('click', triggerBack);
+        if (modalOverlay) modalOverlay.addEventListener('click', triggerBack);
     }
-}
+
 
 // ==========================================================================
 // 7. 工具函式與資料載入入口
@@ -474,6 +481,18 @@ async function loadSummaryData() {
         }
     }
 }
+    // ==========================================================================
+// 💡 🌟 終極防禦：手機實體返回鍵 / 側滑返回手勢的完美攔截器
+// ==========================================================================
+window.addEventListener('popstate', (event) => {
+    const modal = document.getElementById('article-modal');
+    
+    // 如果偵測到使用者按了返回（上一頁），且此時我們的彈出視窗是「開啟」的
+    if (modal && !modal.classList.contains('hidden')) {
+        modal.classList.add('hidden'); // 那就把返回的預設行為，改成「關閉彈窗」！
+    }
+});
+
 
 document.addEventListener("DOMContentLoaded", () => {
     loadSummaryData();

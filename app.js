@@ -18,11 +18,11 @@ const BATCH_SIZE = 12;          // 每次觸發載入的數量
 let unseenNewItems = [];        // 存放「剛進來但還沒塞進畫面」的新資料
 let observer = null;
 
-// 💡 核心新增：精密間隔計數器與交錯偏移量
+// 💡 精密間隔計數器與交錯偏移量 (同步你的最新黃金視覺設定)
 let newsPointer = 0;            // 追蹤常規新聞發到哪一筆
 let itemsSinceTest = 0;         // 距離上一條測試檔案播了幾筆常規內容
-let itemsSinceAd = 24;           // 距離上一條廣告播了幾筆（初始設 3 完美交錯）
-let itemsSincePromo = 6;        // 距離上一條固定推廣播了幾筆（初始設 5 完美交錯）
+let itemsSinceAd = 24;          // 距離上一條廣告播了幾筆（初始 24 讓第一批必出廣告）
+let itemsSincePromo = 6;        // 距離上一條固定推廣播了幾筆
 
 // ==========================================================================
 // 2. 核心功能：動態渲染卡片
@@ -46,6 +46,7 @@ function renderCards(dataArray, append = false) {
         const isNew = item.isNewData ? "font-important" : "";
         const tagClass = item.isImportant ? "card-tag font-important" : `card-tag ${isNew}`;
 
+        // ✅ 完美修復：完整補回被省略的 SVG 與選單按鈕結構
         cardElement.innerHTML = `
             <!-- 右上角點點按鈕 -->
             <button class="card-more-btn" title="更多選項">
@@ -60,6 +61,13 @@ function renderCards(dataArray, append = false) {
                 <button class="menu-item btn-dislike">不喜歡</button>
                 <button class="menu-item btn-hide">不要顯示</button>
             </div>
+
+            <!-- 🖼️ 圖片解鎖：如果有圖片網址，就渲染精美圖框，沒有就優雅隱藏 -->
+            ${item.image ? `
+            <div class="card-image-container">
+                <img src="${item.image}" class="card-image" alt="news thumbnail" loading="lazy">
+            </div>
+            ` : ''}
 
             <div class="${tagClass}">${item.isNewData ? '✨ 新推播 | ' : ''}${escapeHtml(item.tag)}</div>
             <h2 class="card-title">${escapeHtml(item.title)}</h2>
@@ -87,6 +95,7 @@ function renderCards(dataArray, append = false) {
             </div>
         `;
 
+        // 💡 點擊卡片本體 -> 打開彈出視窗看完整文章
         cardElement.addEventListener("click", () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;
@@ -95,17 +104,29 @@ function renderCards(dataArray, append = false) {
             document.getElementById('modal-title').textContent = item.title;
             document.getElementById('modal-source').textContent = item.source;
             document.getElementById('modal-time').textContent = item.time;
-            document.getElementById('modal-snippet').innerHTML = `<p>${escapeHtml(item.snippet)}</p>`;
+            
+            // 🖼️ 彈出視窗大圖解鎖：將圖片與內文完美合體
+            let modalBodyHtml = '';
+            if (item.image) {
+                modalBodyHtml += `
+                <div class="modal-image-container">
+                    <img src="${item.image}" class="modal-image" alt="modal features">
+                </div>`;
+            }
+            modalBodyHtml += `<p>${escapeHtml(item.snippet)}</p>`;
             
             if (item.link) {
-                document.getElementById('modal-snippet').innerHTML += `
+                modalBodyHtml += `
                     <div style="margin-top: 24px; text-align: center;">
                         <a href="${item.link}" target="_blank" style="display:inline-block; padding: 10px 20px; background-color: var(--accent-color); color: white; text-decoration: none; border-radius: 8px; font-size: 0.9rem;">閱讀原文</a>
                     </div>`;
             }
+            
+            document.getElementById('modal-snippet').innerHTML = modalBodyHtml;
             modal.classList.remove('hidden');
         });
 
+        // 節點綁定與事件防冒泡
         const moreBtn = cardElement.querySelector('.card-more-btn');
         const menu = cardElement.querySelector('.more-menu');
         const dislikeBtn = cardElement.querySelector('.btn-dislike');
@@ -167,12 +188,10 @@ function loadMore() {
 
     const nextBatch = [];
     
-    // 1. 優先把剛進來的新即時推播資料塞進去
     while (unseenNewItems.length > 0 && nextBatch.length < BATCH_SIZE) {
         nextBatch.push(unseenNewItems.shift());
     }
 
-    // 2. 補足剩下的數量，嚴格按照常規內容計數進行插播
     while (nextBatch.length < BATCH_SIZE) {
         
         // 🚀 檢查一：是否該插入隨機「測試檔案」（每 6 個常規項目）
@@ -182,9 +201,9 @@ function loadMore() {
                 ...testTemplates[randomIdx],
                 id: `test-${Math.random().toString(36).substring(2, 9)}`
             });
-            itemsSinceTest = 0; // 重置計數
+            itemsSinceTest = 0; 
             renderedCount++;
-            continue; // 跳過本次常規新聞發放
+            continue; 
         }
 
         // 🚀 檢查二：是否該插入隨機「廣告」（每 6 個常規項目）
@@ -194,7 +213,7 @@ function loadMore() {
                 ...adTemplates[randomIdx],
                 id: `ad-${Math.random().toString(36).substring(2, 9)}`
             });
-            itemsSinceAd = 0; // 重置計數
+            itemsSinceAd = 0; 
             renderedCount++;
             continue; 
         }
@@ -206,21 +225,19 @@ function loadMore() {
                 ...promoTemplates[randomIdx],
                 id: `promo-${Math.random().toString(36).substring(2, 9)}`
             });
-            itemsSincePromo = 0; // 重置計數
+            itemsSincePromo = 0; 
             renderedCount++;
             continue; 
         }
 
-        // 📝 發放常規內容（正常抓新聞，看完就自動無限輪迴舊聞）
         if (currentFilteredData.length > 0) {
             const newsIndex = newsPointer % currentFilteredData.length;
             nextBatch.push(currentFilteredData[newsIndex]);
             newsPointer++;
         } else {
-            break; // 防呆安全閥
+            break; 
         }
 
-        // 💡 只有成功塞入一則常規新聞內容時，特殊插播的計數器才會前進
         itemsSinceTest++;
         itemsSinceAd++;
         itemsSincePromo++;
@@ -264,13 +281,13 @@ function filterAndRenderData() {
 
     currentFilteredData = filtered;
     
-    // 🔍 搜尋或過濾時，將計數器與指針歸零，確保搜尋結果排版一致
+    // ✅ 完美同步：重置時，讓計數指針完全對齊你的全域自訂數值
     renderedCount = 0;      
     unseenNewItems = [];    
     newsPointer = 0;
     itemsSinceTest = 0;
-    itemsSinceAd = 3;
-    itemsSincePromo = 5;
+    itemsSinceAd = 24;      
+    itemsSincePromo = 6;
     
     const sentinel = document.getElementById('sentinel');
     const container = document.getElementById("wall-container");
@@ -410,7 +427,6 @@ async function loadSummaryData() {
         
         allSummaries = await response.json();
         
-        // 💡 🌟 同步載入三路本地輔助檔案，並給予獨立的錯誤防呆
         try {
             const [testRes, promoRes, adRes] = await Promise.all([
                 fetch('./data/summaries.json').then(r => r.json()).catch(() => []),
@@ -426,13 +442,13 @@ async function loadSummaryData() {
 
         currentFilteredData = allSummaries;
         
-        // 🔄 切換標籤頁時，完美初始化所有狀態
+        // ✅ 完美同步：頁面初始化載入時，同樣完全遵循你的自訂偏移量
         renderedCount = 0;
         unseenNewItems = [];
         newsPointer = 0;
         itemsSinceTest = 0;
-        itemsSinceAd = 3;
-        itemsSincePromo = 5;
+        itemsSinceAd = 24;      
+        itemsSincePromo = 6;
         
         if (container) container.innerHTML = ""; 
         const sentinel = document.getElementById('sentinel');
@@ -444,7 +460,6 @@ async function loadSummaryData() {
     } catch (error) {
         console.error("真實新聞連線失敗，啟動本地快取備援", error);
         try {
-            // ✅ 連線失敗備援：依然拿原本的測試檔案 summaries.json 來頂替新聞欄位
             const fallback = await fetch('./data/summaries.json');
             allSummaries = await fallback.json();
             testTemplates = allSummaries; 

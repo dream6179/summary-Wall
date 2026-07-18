@@ -1,4 +1,6 @@
-/* 基礎重設與變數定義 */
+/* ==========================================================================
+   1. 基礎重設與全域變數
+   ========================================================================== */
 :root {
     --bg-color: #f8f9fa;
     --card-bg: #ffffff;
@@ -6,7 +8,6 @@
     --text-muted: #5f6368;
     --accent-color: #1a73e8; /* Google 藍 */
     --border-color: #dadce0;
-    --shadow-sm: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
     --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
 }
 
@@ -16,7 +17,7 @@
     padding: 0;
 }
 
-/* 💡 修改這裡：確保 html 與 body 絕對不會往橫向溢出 */
+/* 確保手機端與電腦端絕對不會往橫向溢出變形 */
 html, body {
     max-width: 100%;
     overflow-x: hidden;
@@ -30,15 +31,16 @@ body {
     line-height: 1.5;
 }
 
-
-/* 頂部導覽列樣式 */
+/* ==========================================================================
+   2. 頂部導覽列與大搜尋框 (移除舊提示燈，放大搜尋感)
+   ========================================================================== */
 .navbar {
     background-color: var(--card-bg);
     border-bottom: 1px solid var(--border-color);
     position: sticky;
     top: 0;
     z-index: 100;
-    padding: 14px 24px 0 24px; /* 稍微增加上下間距，讓大搜尋框更協調 */
+    padding: 14px 24px 0 24px; 
 }
 
 .nav-container {
@@ -47,20 +49,28 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 24px; /* 增加元件間距 */
+    gap: 24px; 
 }
 
-/* 🚀 放大後的現代感搜尋框 */
+.logo {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--accent-color);
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+}
+
+/* 放大後的現代感搜尋框 */
 .search-box {
     position: relative;
     flex-grow: 1;
-    max-width: 800px; /* 👈 從 600px 放大到 800px */
+    max-width: 800px; 
 }
 
 .search-box input {
     width: 100%;
-    padding: 12px 44px 12px 18px; /* 👈 內襯微調，打字更舒服 */
-    font-size: 1rem;             /* 👈 字體放大到標準 1rem */
+    padding: 12px 44px 12px 18px; 
+    font-size: 1rem;             
     border: 1px solid transparent;
     background-color: #f1f3f4;
     border-radius: 8px;
@@ -71,7 +81,7 @@ body {
     outline: none;
     background-color: var(--card-bg);
     border-color: var(--accent-color);
-    box-shadow: 0 1px 6px rgba(32,33,36,0.28); /* 👈 點擊時聚焦陰影加強，更有 Google 搜尋感 */
+    box-shadow: 0 1px 6px rgba(32,33,36,0.28); 
 }
 
 #clear-search {
@@ -81,46 +91,18 @@ body {
     transform: translateY(-50%);
     background: none;
     border: none;
-    font-size: 1.4rem; /* 👈 清除按鈕也等比例放大 */
+    font-size: 1.4rem; 
     color: var(--text-muted);
     cursor: pointer;
 }
 
-
-.hidden {
-    display: none;
-}
-
-.nav-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    white-space: nowrap;
-}
-
-/* 呼吸燈效果 */
-.pulse-icon {
-    width: 8px;
-    height: 8px;
-    background-color: #34a853;
-    border-radius: 50%;
-    box-shadow: 0 0 0 0 rgba(52, 168, 83, 0.7);
-    animation: pulse 1.6s infinite;
-}
-
-@keyframes pulse {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0.7); }
-    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(52, 168, 83, 0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0); }
-}
-
-/* 主題篩選標籤列 */
+/* ==========================================================================
+   3. 主題篩選標籤列 (支援手機端橫向滑動)
+   ========================================================================== */
 .filter-tabs-wrapper {
     max-width: 1200px;
     margin: 12px auto 0 auto;
-    overflow-x: auto; /* 手機板可橫向滑動 */
+    overflow-x: auto; 
     scrollbar-width: none; /* 隱藏 Firefox 滾動條 */
 }
 
@@ -157,21 +139,22 @@ body {
     font-weight: 500;
 }
 
-/* 主要排版區塊 */
+/* ==========================================================================
+   4. 主要卡片排版與瀑布流區域
+   ========================================================================== */
 .wall-wrapper {
     max-width: 1200px;
     margin: 0 auto;
     padding: 24px 16px;
 }
 
-/* CSS Grid 自動適應卡片瀑布流 */
 .wall-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 16px;
 }
 
-/* 卡片基礎樣式 */
+/* 卡片樣式 */
 .card {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -189,14 +172,14 @@ body {
     border-color: transparent;
 }
 
-/* 焦點卡片排版強化（橫跨兩格） */
+/* 焦點卡片排版（橫跨兩格，僅在平版電腦以上生效） */
 @media (min-width: 768px) {
     .card.featured {
         grid-column: span 2;
     }
 }
 
-/* 卡片內部元素 */
+/* 卡片內部元素樣式 */
 .card-tag {
     font-size: 0.75rem;
     font-weight: 700;
@@ -248,21 +231,14 @@ body {
     color: var(--text-main);
 }
 
-.loading-text {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 40px;
-    color: var(--text-muted);
-    font-size: 1rem;
-}
-
-/* 隱藏元素用 */
+/* ==========================================================================
+   5. 功能性元件（隱藏、載入哨兵、懸浮按鈕）
+   ========================================================================== */
 .hidden {
     display: none !important;
 }
 
-/* 底部哨兵載入文字的間距調整 */
-#sentinel {
+.loading-text, #sentinel {
     grid-column: 1 / -1;
     text-align: center;
     padding: 30px;
@@ -273,11 +249,11 @@ body {
     align-items: center;
 }
 
-/* 懸浮回到頂部按鈕 */
+/* 修正後的防溢出懸浮回到頂部按鈕 */
 .btt-btn {
     position: fixed;
-    bottom: 32px;
-    right: 32px;
+    bottom: 24px;   
+    right: 24px;    
     width: 48px;
     height: 48px;
     background-color: var(--card-bg);
@@ -291,32 +267,15 @@ body {
     align-items: center;
     z-index: 999;
     transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
-}
-
-/* 懸浮回到頂部按鈕 */
-.btt-btn {
-    position: fixed;
-    bottom: 24px;   /* 手機端稍微往下一點點 */
-    right: 24px;    /* 手機端稍微往右一點點，防擠壓 */
-    width: 48px;
-    height: 48px;
-    background-color: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 50%;
-    color: var(--accent-color);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 999;
-    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
-    
-    /* 💡 加上這兩行防禦樣式 */
     box-sizing: border-box;
     flex-shrink: 0; 
 }
 
+.btt-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(26, 115, 232, 0.25);
+    background-color: #f8f9fa;
+}
 
 /* 提示紅點 */
 .btt-btn .badge {
@@ -325,7 +284,7 @@ body {
     right: 2px;
     width: 10px;
     height: 10px;
-    background-color: #ea4335; /* Google 紅 */
+    background-color: #ea4335; 
     border-radius: 50%;
     border: 2px solid var(--card-bg);
     box-shadow: 0 0 0 0 rgba(234, 67, 53, 0.7);

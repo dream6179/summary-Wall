@@ -294,16 +294,24 @@ function setupEventListeners() {
         });
     }
 
-    if (tabsContainer) {
-        tabsContainer.addEventListener('click', (e) => {
-            const clickedTab = e.target.closest('.tab');
-            if (!clickedTab) return;
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            clickedTab.classList.add('active');
-            currentTag = clickedTab.dataset.tag;
-            filterAndRenderData();
-        });
-    }
+    // 找到這段並修改
+if (tabsContainer) {
+    tabsContainer.addEventListener('click', (e) => {
+        const clickedTab = e.target.closest('.tab');
+        if (!clickedTab) return;
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        clickedTab.classList.add('active');
+        
+        currentTag = clickedTab.dataset.tag;
+        
+        // ❌ 原本寫法：只在本地篩選，這會導致換標籤時資料對不上
+        // filterAndRenderData();
+        
+        // ✅ 修正寫法：切換標籤時，強制觸發重新載入資料
+        loadSummaryData(); 
+    });
+}
+
 
     if (bttBtn) {
         window.addEventListener('scroll', () => {

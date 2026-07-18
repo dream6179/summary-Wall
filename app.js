@@ -158,55 +158,101 @@ function renderCards(dataArray, append = false) {
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
 
-                // 🚀 ✅ 滿血大升級：解鎖前端 ReadableStream 串流打字機讀取核心
+                // 🚀 ✅ 雙端防禦串流核心邏輯
                 try {
                     const fetchUrl = `https://news-api.zhtttttt.workers.dev/?aiTitle=${encodeURIComponent(item.title)}&aiSnippet=${encodeURIComponent(item.snippet)}`;
                     const response = await fetch(fetchUrl);
                     
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder();
+                    const aiBox = document.getElementById('ai-response-box');
+                    
+                    // 🧙‍♂️ 抽離排版大師過濾器，確保雙軌都能完美排版
+                    const renderAiOutput = (text) => {
+                        if (!aiBox || !text) return;
+                        const paragraphs = text.split('\n\n');
+                        const finalHtml = paragraphs.map(p => {
+                            if (!p.trim()) return '';
+                            let cleanText = escapeHtml(p.trim()).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                            return `<p>${cleanText}</p>`;
+                        }).join('');
+                        aiBox.innerHTML = finalHtml;
+                    };
+
                     let accumulatedText = ""; 
                     let rawBuffer = "";        
                     
-                    const aiBox = document.getElementById('ai-response-box');
-                    if (aiBox) aiBox.innerHTML = ""; 
-                    
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) break; 
+                    // 🚨 💥【防線 A：iPhone WebView / 舊版瀏覽器閹割環境攔截】
+                    if (!response.body || typeof response.body.getReader !== 'function') {
+                        console.log("進入 iPhone / 限制型 WebView 環境，啟動全量安全載入通道...");
+                        const fullText = await response.text();
+                        rawBuffer = fullText; // 留底供自癒診斷使用
                         
-                        rawBuffer += decoder.decode(value, { stream: true });
-                        
-                        const regex = /"text":\s*"((?:[^"\\]|\\.)*)"/g;
-                        let match;
-                        let lastIndex = 0;
-                        
-                        while ((match = regex.exec(rawBuffer)) !== null) {
-                            let extractedTarget = match[1];
-                            try {
-                                accumulatedText += JSON.parse(`"${extractedTarget}"`);
-                            } catch (e) {
-                                accumulatedText += extractedTarget.replace(/\\n/g, '\n').replace(/\\"/g, '"');
-                            }
-                            lastIndex = regex.lastIndex;
+                        const fallbackRegex = /"text":\s*"((?:[^"\\]|\\.)*)"/g;
+                        let fallbackMatch;
+                        while ((fallbackMatch = fallbackRegex.exec(fullText)) !== null) {
+                            let extracted = fallbackMatch[1];
+                            try { accumulatedText += JSON.parse(`"${extracted}"`); } 
+                            catch (e) { accumulatedText += extracted.replace(/\\n/g, '\n').replace(/\\"/g, '"'); }
                         }
                         
-                        if (lastIndex > 0) {
-                            rawBuffer = rawBuffer.slice(lastIndex);
+                        if (accumulatedText) {
+                            renderAiOutput(accumulatedText);
                         }
+                    } else {
+                        // 🔄 💥【防線 B：常規 PC / 高速打字機串流讀取軌道】
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
+                        if (aiBox) aiBox.innerHTML = ""; 
                         
-                        // 🎨 🌟 即時排版大師：同步輸出 HTML 段落與粗體藍標題
-                        if (aiBox && accumulatedText) {
-                            const paragraphs = accumulatedText.split('\n\n');
-                            const finalHtml = paragraphs.map(p => {
-                                if (!p.trim()) return '';
-                                let cleanText = escapeHtml(p.trim()).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                                return `<p>${cleanText}</p>`;
-                            }).join('');
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break; 
                             
-                            aiBox.innerHTML = finalHtml;
+                            rawBuffer += decoder.decode(value, { stream: true });
+                            
+                            const regex = /"text":\s*"((?:[^"\\]|\\.)*)"/g;
+                            let match;
+                            let lastIndex = 0;
+                            
+                            while ((match = regex.exec(rawBuffer)) !== null) {
+                                let extractedTarget = match[1];
+                                try {
+                                    accumulatedText += JSON.parse(`"${extractedTarget}"`);
+                                } catch (e) {
+                                    accumulatedText += extractedTarget.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+                                }
+                                lastIndex = regex.lastIndex;
+                            }
+                            
+                            if (lastIndex > 0) {
+                                rawBuffer = rawBuffer.slice(lastIndex);
+                            }
+                            
+                            if (accumulatedText) {
+                                renderAiOutput(accumulatedText); 
+                            }
                         }
                     }
+
+                    // 🚀 💥【終極神級邏輯：串流自癒診斷器】
+                    // 萬一跑完了但是 accumulatedText 卻是空的，代表 API 吐回了「非 JSON 的純文字錯誤訊息」
+                    if (!accumulatedText && aiBox) {
+                        const cleanBuffer = rawBuffer.trim();
+                        // 1. 如果回傳的內容不包含 JSON 結構字元，說明這百分之百是 Worker catch 拋出來的錯誤本體
+                        if (cleanBuffer && !cleanBuffer.startsWith('{') && !cleanBuffer.startsWith('[')) {
+                            aiBox.innerHTML = `<div style="color:#ea4335; font-weight:600; padding:4px 0; line-height:1.5;">⚠️ 遠端 Worker 拒絕連線：<br><span style="color:#3c4043; font-weight:400;">${escapeHtml(cleanBuffer)}</span></div>`;
+                        } 
+                        // 2. 如果包含了 Google 的標準 JSON 錯誤訊息，直接把內部的 message 欄位挖出來顯示
+                        else if (cleanBuffer && cleanBuffer.includes('"message"')) {
+                            const msgMatch = cleanBuffer.match(/"message"\s*:\s*"([^"]+)"/);
+                            const errMsg = msgMatch ? msgMatch[1] : "Google 核心拒絕回應";
+                            aiBox.innerHTML = `<div style="color:#ea4335; font-weight:600; padding:4px 0;">⚠️ Google API 報錯：<br><span style="color:#3c4043; font-weight:400;">${escapeHtml(errMsg)}</span></div>`;
+                        } 
+                        // 3. 通用兜底
+                        else {
+                            aiBox.innerHTML = `<div style="color:#ea4335; font-weight:600; padding:4px 0;">⚠️ AI 戰術報告未預期中斷（可能原因：Gemini 3.5模型失效、密鑰過期或內容觸發敏感審查）。</div>`;
+                        }
+                    }
+
                 } catch (error) {
                     const aiBox = document.getElementById('ai-response-box');
                     if (aiBox) {
@@ -324,10 +370,9 @@ function filterAndRenderData() {
 }
 
 // ==========================================================================
-// 5. 💡 🌟【真實對接更新】：每小時在背景連線一次 Worker 抓取真新聞
+// 5. 【真實對接更新】：每小時在背景連線一次 Worker 抓取真新聞
 // ==========================================================================
 function simulateLiveUpdates() {
-    // 1小時 = 60分 * 60秒 * 1000毫秒 = 3,600,000 ms
     setInterval(async () => {
         if (allSummaries.length === 0) return;
         
@@ -339,27 +384,22 @@ function simulateLiveUpdates() {
             
             let brandNewItems = [];
             freshNews.forEach(newItem => {
-                // 🕵️‍♂️ 嚴格核對：檢查新抓進來的文章標題是否已經存在於目前的列表裡
                 const exists = allSummaries.some(oldItem => oldItem.title === newItem.title);
                 if (!exists) {
                     newItem.isNewData = true;
-                    newItem.time = "剛剛"; // 標註為熱騰騰剛出爐的資訊
+                    newItem.time = "剛剛"; 
                     brandNewItems.push(newItem);
                 }
             });
 
-            // 📢 如果真的在世界線上有發現最新的實體 RSS 新聞，立刻在前端推播氣泡！
             if (brandNewItems.length > 0) {
-                // 將新文章塞入記憶體陣列的最頂端
                 allSummaries = [...brandNewItems, ...allSummaries];
                 
-                // 優先在 currentFilteredData 最前方注入，並加進未讀緩衝區
                 brandNewItems.forEach(item => {
                     currentFilteredData.unshift(item);
                     unseenNewItems.push(item);
                 });
 
-                // 喚醒螢幕上方的「✨ 新推播」浮動通知氣泡
                 const badge = document.getElementById('new-data-badge');
                 if (badge) { badge.classList.remove('hidden'); }
             }
@@ -542,5 +582,5 @@ window.addEventListener('popstate', (event) => {
 document.addEventListener("DOMContentLoaded", () => {
     loadSummaryData();
     setupEventListeners();
-    simulateLiveUpdates(); // 正式在背景點火啟動每小時真實抓取核心！
+    simulateLiveUpdates(); 
 });

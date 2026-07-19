@@ -13,56 +13,26 @@ export default {
     const { searchParams } = new URL(request.url);
     
     // ==========================================================================
-    // 🎨【AI 封面生圖核心 + 🛡️ 全球 KV 快取防禦盾牌完全體】
+    // 🎨【AI 封面生圖核心 - 🔙 真正還原最原始、直接回傳純圖片二進位版本】
     // ==========================================================================
     const aiImageTitle = searchParams.get('aiImageTitle'); 
     if (aiImageTitle) {
       try {
-        const imageCacheKey = "ai_cover:" + encodeURIComponent(aiImageTitle).substring(0, 150);
-        
-        if (env.NEWS_CACHE_KV) {
-          const cachedImagePayload = await env.NEWS_CACHE_KV.get(imageCacheKey);
-          if (cachedImagePayload) {
-            console.log("🎯 完美命中邊緣 KV 快取！0秒秒回 AI 封面");
-            return new Response(cachedImagePayload, {
-              headers: { 
-                "Content-Type": "application/json", 
-                ...corsHeaders 
-              }
-            });
-          }
-        }
-
-        // ==========================================================================
-        // 🎨【動態繪圖路由】：利用 Stable Diffusion 現場高流速作畫
-        // ==========================================================================
         if (!env.AI) {
-          throw new Error("系統提示：未在 Cloudflare 後台綁定 AI 萬能大腦（請檢查 env.AI 是否綁定）。");
+          throw new Error("系統提示：環境變數中缺少 AI 綁定。");
         }
 
-        // 🚀 調度邊緣算力，對準標題高流速噴發作畫
+        // 🚀 現場高流速作畫，直接拉取 Cloudflare 內建免費 Stable Diffusion 的原始圖片流
         const response = await env.AI.run('@cf/stabilityai/stable-diffusion-xl-base-1.0', {
           prompt: `Cyberpunk digital art style, high technology concept vector illustration, professional web cover design about: ${aiImageTitle}`,
           num_steps: 20
         });
 
-        // 🔄 這裡是一記漂亮的魔術：將內建 SD 吐出來的二進位圖片流，當場轉成網頁秒懂的 Base64 Data URL
-        // 這樣就能夠完美偽裝成網址，順順利利鎖進 KV 口袋和噴回前端了！
-        const base64Image = btoa(String.fromCharCode(...new Uint8Array(response)));
-        const realUrl = `data:image/jpeg;base64,${base64Image}`;
-        
-        // 重新封裝成前端舊版 app.js 最喜歡的 JSON 格式
-        const finalImagePayload = JSON.stringify({ imageUrl: realUrl });
-        // ==========================================================================
-
-        if (env.NEWS_CACHE_KV && finalImagePayload) {
-          ctx.waitUntil(env.NEWS_CACHE_KV.put(imageCacheKey, finalImagePayload, { expirationTtl: 2592000 }));
-          console.log("💾 AI 封面成功打包存入邊緣 KV 快取，下回免燒點數！");
-        }
-
-        return new Response(finalImagePayload, {
+        // 🎯 核心關鍵：直接把原始二進位圖片流（response）噴回去，Content-Type 牢牢咬死 image/jpeg！
+        // 這樣你的前端 <img src="..."> 才能在千分之一秒內直接看懂、當場滿圖炸開！
+        return new Response(response, {
           headers: { 
-            "Content-Type": "application/json", 
+            "Content-Type": "image/jpeg", 
             ...corsHeaders 
           }
         });

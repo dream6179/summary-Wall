@@ -24,6 +24,111 @@ let itemsSincePromo = 6;
 const API_BASE_URL = "https://news-api.zhtttttt.workers.dev";
 
 // ==========================================================================
+// 🚀 賽博聊天室前端連線引擎
+// ==========================================================================
+let socket = null;
+const chatUrl = "wss://news-wall-chat.zhtttttt.workers.dev/ws";
+// 暫時隨機生成一個暱稱，之後你可以改成抓取使用者輸入
+const myUsername = "情報員_" + Math.floor(Math.random() * 9000 + 1000); 
+
+function initChatEngine() {
+  console.log("⚡ 正在開通與太空艙的即時連線...");
+  socket = new WebSocket(chatUrl);
+
+  // 1. 連線成功建立
+  socket.onopen = () => {
+    console.log("🟩 已成功潛入即時聊天室！");
+  };
+
+  // 2. 接收太空艙廣播的訊息
+  socket.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+
+      if (data.system) {
+        // 📢 處理系統點名：例如「新情報員加入。🔥 目前在線：3 人」
+        updateSystemStatus(data.message);
+      } else {
+        // 💬 處理一般人的對話訊息
+        appendMessageBubble(data.user, data.text, data.user === myUsername);
+      }
+    } catch (err) {
+      console.error("❌ 解析廣播封包失敗:", err);
+    }
+  };
+
+  // 3. 自動重連機制（萬一伺服器抽筋或網路斷開，10秒後自動復活）
+  socket.onclose = () => {
+    console.log("🟥 與太空艙斷開連線，10秒後嘗試自動重連...");
+    setTimeout(() => {
+      initChatEngine();
+    }, 10000);
+  };
+}
+
+// ✍️ 送出訊息的觸發函式（例如綁定在點擊「送出」按鈕或按下 Enter 時）
+function sendMessage(textInput) {
+  if (!socket || socket.readyState !== WebSocket.OPEN || !textInput.trim()) return;
+
+  const payload = {
+    user: myUsername,
+    text: textInput.trim(),
+    timestamp: Date.now()
+  };
+
+  // 啪一聲，毫秒級送上雲端記憶體
+  socket.send(JSON.stringify(payload));
+}
+
+// ==========================================================================
+// 🎨 UI 渲染介面介接（真正負責把資料噴上畫面！）
+// ==========================================================================
+function updateSystemStatus(msg) {
+  const statusEl = document.getElementById("chat-status");
+  if (statusEl) {
+    statusEl.innerText = msg; // 動態更新在線人數（例如：🔥 目前在線：3 人）
+  } else {
+    console.log("📢 系統提示：", msg);
+  }
+}
+
+function appendMessageBubble(user, text, isMe) {
+  const chatBox = document.getElementById("chat-box");
+  if (!chatBox) {
+    console.log(`💬 [${user}] 說: ${text}`);
+    return;
+  }
+  
+  // 建立賽博風對話氣泡
+  const bubbleWrapper = document.createElement("div");
+  bubbleWrapper.style.margin = "8px 0";
+  bubbleWrapper.style.display = "flex";
+  bubbleWrapper.style.flexDirection = "column";
+  bubbleWrapper.style.alignItems = isMe ? "flex-end" : "flex-start";
+
+  bubbleWrapper.innerHTML = `
+    <span style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 2px;">${escapeHtml(user)}</span>
+    <div style="
+      padding: 8px 12px; 
+      border-radius: 12px; 
+      font-size: 0.9rem; 
+      max-width: 75%; 
+      word-break: break-all;
+      background-color: ${isMe ? "var(--accent-color)" : "#e8eaed"}; 
+      color: ${isMe ? "white" : "var(--text-main)"};
+      border-bottom-${isMe ? "right" : "left"}-radius: 2px;
+    ">
+      ${escapeHtml(text)}
+    </div>
+  `;
+
+  chatBox.appendChild(bubbleWrapper);
+  
+  // 🧙‍♂️ 貼心細節：有人發話時，對話框自動滾動到最底部
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// ==========================================================================
 // 2. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖進化)
 // ==========================================================================
 function renderCards(dataArray, append = false) {
@@ -616,4 +721,5 @@ document.addEventListener("DOMContentLoaded", () => {
     loadSummaryData();       // 2. 啟動對接後端 Worker (內含極速預載盾牌)
     setupEventListeners();   // 3. 綁定全網頁事件監聽
     simulateLiveUpdates();   // 4. 開啟背景即時重新整理
+    initChatEngine();        // 5. 🎯 確保網頁元件都蓋好後，正式潛入即時聊天室！
 });

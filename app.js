@@ -137,7 +137,7 @@ function renderCards(dataArray, append = false) {
                             <span style="font-size:1.1rem;">🧠</span> Gemini 核心即時趨勢剖析
                         </h4>
                         <div id="ai-response-box" style="font-size: 0.92rem; color: #3c4043; line-height: 1.55; margin: 0; padding: 0;">
-                            <span style="display:inline-block; animation: badgePulse 1.6s infinite; margin-right: 6px;">⚡</span> AI正在線上進行數據剖析與衍生解解读...
+                            <span style="display:inline-block; animation: badgePulse 1.6s infinite; margin-right: 6px;">⚡</span> AI正在線上進行數據剖析與衍生解讀...
                         </div>
                         <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; border-top: 1px dashed #dadce0; padding-top: 8px; line-height: 1.4;">
                             ⚠️ <strong>模組提示：</strong>本區塊由 AI 自動產出，注意潛在幻覺風險，請以官方公告為準。
@@ -353,35 +353,63 @@ function filterAndRenderData() {
 // 📡 中央調度入口：負責向後端完全體 Worker 發送請求並初始化指針
 async function loadSummaryData() {
     const container = document.getElementById("wall-container");
+    
+    // 🚀【秒讀取骨骼盾牌】：如果這是第一次打開網頁（allSummaries 長度為 0），立刻先同步灌入本地快取資料！
+    // 這樣網路不好的使用者一進網頁瞬間就能看到豐富的推廣文章，完全不需要面對空蕩蕩的畫面等轉圈圈！
     if (container && allSummaries.length === 0) {
-        container.innerHTML = `<div class="loading-text">📡 正在連線核心情報庫...</div>`;
-    }
-
-    const fetchUrl = `${API_BASE_URL}/?tag=${encodeURIComponent(currentTag)}`;
-
-    try {
-        const response = await fetch(fetchUrl);
-        if (!response.ok) throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`);
-        allSummaries = await response.json();
-        
         try {
+            // 先把本地靜態資源（流速接近 0 毫秒）同步全量拉下來
             const [testRes, promoRes, adRes] = await Promise.all([
                 fetch('./data/summaries.json').then(r => r.json()).catch(() => []),
                 fetch('./data/promo.json').then(r => r.json()).catch(() => []),
                 fetch('./data/ads.json').then(r => r.json()).catch(() => [])
             ]);
-            testTemplates = testRes; promoTemplates = promoRes; adTemplates = adRes;
-        } catch (localError) { console.log("本地特殊卡片預載失敗"); }
+            testTemplates = testRes; 
+            promoTemplates = promoRes; 
+            adTemplates = adRes;
 
+            // 🎯 拿 promo.json 的內容當作「極速預載卡片」直接鋪滿瀑布流牆面！
+            if (promoTemplates.length > 0 && allSummaries.length === 0) {
+                const preloadItems = promoTemplates.map(item => ({
+                    ...item,
+                    id: `promo-pre-${Math.random().toString(36).substring(2, 9)}`,
+                    time: "精選推薦" // 標記為推薦，增加質感
+                }));
+                renderCards(preloadItems); 
+            } else {
+                container.innerHTML = `<div class="loading-text">📡 正在連線核心情報庫...</div>`;
+            }
+        } catch (e) {
+            container.innerHTML = `<div class="loading-text">📡 正在連線核心情報庫...</div>`;
+        }
+    } else if (container) {
+        // 💡 當使用者在後續點選不同分頁標籤切換時，才顯示優雅的轉頁提示
+        container.innerHTML = `<div class="loading-text">📡 正在同步最新情報...</div>`;
+    }
+
+    const fetchUrl = `${API_BASE_URL}/?tag=${encodeURIComponent(currentTag)}`;
+
+    try {
+        // 📡 當使用者滑動看著預載文章時，背景早已向遠端的 Worker 全力發送真新聞請求
+        const response = await fetch(fetchUrl);
+        if (!response.ok) throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`);
+        allSummaries = await response.json();
+        
+        // 🎯 只要真新聞一到部，瞬間無縫覆蓋，並完全啟動混流指針與無限滾動！
         filterAndRenderData();
         if (!observer) setupInfiniteScroll();
         
     } catch (error) {
         console.error("真實新聞連線失敗，啟動本地快取備援", error);
         try {
-            const fallback = await fetch('./data/summaries.json');
-            allSummaries = await fallback.json();
-            testTemplates = allSummaries; 
+            // 如果連線真的不幸全面斷線，直接沿用剛才加載好的本地模板作為降級備援
+            if (testTemplates.length === 0) {
+                const fallback = await fetch('./data/summaries.json');
+                allSummaries = await fallback.json();
+                testTemplates = allSummaries; 
+            } else {
+                allSummaries = testTemplates;
+            }
             filterAndRenderData(); 
             if (!observer) setupInfiniteScroll();
         } catch (e) {
@@ -585,7 +613,7 @@ window.addEventListener('popstate', (event) => {
 // ⚡ 唯一、純淨的中央開機引擎
 document.addEventListener("DOMContentLoaded", () => {
     initCustomStorage();     // 1. 優先從本機硬碟同步自訂選單位置
-    loadSummaryData();       // 2. 啟動對接後端 Worker
-    setupEventListeners();   // 3. 綁定全網頁事件監聽（含選單切換）
+    loadSummaryData();       // 2. 啟動對接後端 Worker (內含極速預載盾牌)
+    setupEventListeners();   // 3. 綁定全網頁事件監聽
     simulateLiveUpdates();   // 4. 開啟背景即時重新整理
 });

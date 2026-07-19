@@ -185,18 +185,24 @@ export default {
       }
     }
 
-    // ==========================================================================
-    // 📰 【常規路由】：輕量級 RSS 智慧混流發牌 (中央社、科技新報、Yahoo股市)
-    // ==========================================================================
-    const currentTag = searchParams.get('tag') || 'all';
-    const browserHeader = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" };
-    
-    const sources = {
-      "cna": { url: "https://feeds.feedburner.com/cnaFirstNews", name: "中央通訊社", tag: "焦點新聞" },
-      "tech": { url: "https://technews.tw/feed/", name: "科技新報 TechNews", tag: "科技新知" },
-      "game": { url: "https://technews.tw/category/entertainment/feed/", name: "科技新報・遊戲動漫", tag: "遊戲情報" },
-      "stock": { url: "https://tw.stock.yahoo.com/rss?category=tw-market", name: "Yahoo 奇摩股市", tag: "財經新聞" }
-    };
+    // ==========================================================================
+    // 📰 【常規路由】：輕量級 RSS 智慧混流發牌 (中央社、科技新報、巴哈GNN、Yahoo股市)
+    // ==========================================================================
+    const currentTag = searchParams.get('tag') || 'all';
+    const browserHeader = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" };
+    
+    const sources = {
+      "cna": { url: "https://feeds.feedburner.com/cnaFirstNews", name: "中央通訊社", tag: "焦點新聞" },
+      "tech": { url: "https://technews.tw/feed/", name: "科技新報 TechNews", tag: "科技新知" },
+      
+      // 🎮 🎯【核心重灌】：直接無痛換成巴哈姆特官方 GNN RSS 水管！
+      "game": { url: "https://rss.bahamut.com.tw/gnn.xml", name: "巴哈姆特 GNN 新聞", tag: "遊戲情報" },
+      
+      "stock": { url: "https://tw.stock.yahoo.com/rss?category=tw-market", name: "Yahoo 奇摩股市", tag: "財經新聞" }
+    };
+
+    // 💡 下方的 routing 判斷完全維持 sources.game 不動，它就會自動對接巴哈了！
+
 
     try {
       let finalItems = [];

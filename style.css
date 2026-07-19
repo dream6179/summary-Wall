@@ -17,11 +17,10 @@
     padding: 0;
 }
 
-/* 確保手機端與電腦端絕對不會往橫向溢出變形 */
 html, body {
     max-width: 100%;
     overflow-x: hidden;
-    -webkit-overflow-scrolling: touch; /* 讓 iOS 手機滾動更流暢 */
+    -webkit-overflow-scrolling: touch; /* iOS 滑動優化 */
 }
 
 body {
@@ -32,7 +31,7 @@ body {
 }
 
 /* ==========================================================================
-   2. 頂部導覽列與大搜尋框 (三欄 Grid 強制防禦置中版)
+   2. 頂部導覽列與大搜尋框
    ========================================================================== */
 .navbar {
     background-color: var(--card-bg);
@@ -47,7 +46,6 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     display: grid;
-    /* 🚀 左右兩側強制劃分各 140px 的對稱地盤，迫使中央搜尋框死死鎖在螢幕正中央！ */
     grid-template-columns: 140px 1fr 140px; 
     align-items: center;
     gap: 16px; 
@@ -59,21 +57,20 @@ body {
     color: var(--accent-color);
     letter-spacing: -0.5px;
     white-space: nowrap;
-    text-align: left; /* 貼左 */
+    text-align: left;
 }
 
-/* 放大後的現代感搜尋框 */
 .search-box {
     position: relative;
     width: 100%;
     max-width: 650px; 
-    justify-self: center; /* 確保在 Grid 中央軌道內完美置中 */
+    justify-self: center;
 }
 
 .search-box input {
     width: 100%;
     padding: 12px 44px 12px 18px; 
-    font-size: 1rem;             
+    font-size: 1rem;                  
     border: 1px solid transparent;
     background-color: #f1f3f4;
     border-radius: 8px;
@@ -99,7 +96,6 @@ body {
     cursor: pointer;
 }
 
-/* 右側容器：負責把齒輪頂到最右邊 */
 .nav-right {
     text-align: right;
     justify-self: end;
@@ -107,7 +103,6 @@ body {
     align-items: center;
 }
 
-/* ⚙️ 齒輪按鈕精緻動畫樣式 */
 .settings-gear-btn {
     background: none;
     border: none;
@@ -127,7 +122,6 @@ body {
     transform: rotate(45deg);
 }
 
-/* 響應式追加：當螢幕寬度小於 600px 時，縮小兩側寬度，把呼吸空間還給搜尋框！ */
 @media (max-width: 600px) {
     .nav-container {
         grid-template-columns: 80px 1fr 50px;
@@ -142,29 +136,20 @@ body {
 }
 
 /* ==========================================================================
-   3. 主題篩選標籤列 (💡 完美融合自訂下拉選單本地記憶版)
+   3. 主題篩選標籤列 (🎯 雙劍合璧：徹底解決不置中與滑順多選面板)
    ========================================================================== */
-.filter-tabs-wrapper {
-    max-width: 1200px;
-    margin: 12px auto 0 auto;
-    overflow-x: auto; 
-    scrollbar-width: none; /* 隱藏 Firefox 滾動條 */
-}
-
-.filter-tabs-wrapper::-webkit-scrollbar {
-    display: none; /* 隱藏 Chrome/Safari 滾動條 */
-}
-
-/* 同步支援舊版 filter-tabs 與新版 tab-container 容器結構 */
-.filter-tabs, .tab-container {
+.tab-container {
     display: flex;
+    justify-content: center; /* 完美防禦置中 */
     align-items: center;
     gap: 8px;
-    padding-bottom: 8px;
-    white-space: nowrap;
+    width: 100%;
+    max-width: 1200px;
+    margin: 16px auto; 
+    padding: 0 16px;
+    flex-wrap: wrap; /* RWD 手機端自動優雅折行 */
 }
 
-/* 同步高亮相容：讓舊型 .tab 與新型 .tab-btn 共享精美膠囊造型 */
 .tab, .tab-btn {
     background: none;
     border: none;
@@ -190,63 +175,100 @@ body {
     font-weight: 500;
 }
 
-/* 🎯【自訂選單組合外殼】 */
 .custom-tab-wrapper {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background-color: transparent;
-    border-radius: 20px;
-    flex-shrink: 0;
+    position: relative;
+    display: inline-block;
 }
 
-/* 🎯【自訂情報下拉選單本體樣式】 */
-.custom-select {
-    padding: 6px 28px 6px 12px;
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    background-color: #f1f3f4;
-    border: 1px solid transparent;
-    border-radius: 16px;
-    cursor: pointer;
-    outline: none;
-    font-family: inherit;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-    
-    /* 🧙‍♂️ 精準剝離瀏覽器預設的醜怪向下箭頭，換成客製化極簡向量三角形 */
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='%235f6368'><path d='M7 10l5 5 5-5z'/></svg>");
-    background-repeat: no-repeat;
-    background-position: right 8px center;
+/* 📦 自訂情報新型多選彈出視窗（自帶滑順登場動畫） */
+.custom-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    width: 260px;
+    max-height: 380px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
 }
 
-.custom-select:hover {
-    background-color: #e8e8e8;
-    color: var(--text-main);
+/* 🧙‍♂️ 解放動畫特權：當自訂選單隱藏時，優雅向下淡出 */
+.custom-dropdown-menu.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(8px);
+    display: flex !important; /* 蓋掉全域 display:none 以確保動畫流暢 */
 }
 
-/* ⚡【高亮感應盾】：當「自訂情報」按鈕處於 active 啟用狀態時，連動下拉選單一起華麗換裝變藍！ */
-.tab-btn.active ~ .custom-select,
-.tab.active ~ .custom-select {
-    background-color: #e8f0fe;
-    color: var(--accent-color);
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='%231a73e8'><path d='M7 10l5 5 5-5z'/></svg>");
+.dropdown-header {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f1f3f4;
+    background-color: #f8f9fa;
+    display: flex;
+    justify-content: flex-start;
 }
 
-/* 下拉選單內部原生分組（optgroup）與項目標題微調 */
-.custom-select optgroup {
+.dropdown-clear-btn {
+    background: none;
+    border: none;
+    color: #ea4335;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--accent-color);
-    background-color: var(--card-bg);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
 }
 
-.custom-select option {
-    font-weight: normal;
-    color: var(--text-main);
-    background-color: var(--card-bg);
+.dropdown-clear-btn:hover {
+    background-color: #fce8e6;
+}
+
+.dropdown-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0;
+}
+
+.dropdown-group-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    background-color: #f8f9fa;
+    padding: 6px 14px;
+    margin: 4px 0;
+}
+
+.dropdown-item-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    color: #3c4043;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.dropdown-item-label:hover {
+    background-color: #f1f3f4;
+}
+
+.dropdown-item-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
 }
 
 /* ==========================================================================
@@ -264,7 +286,6 @@ body {
     gap: 16px;
 }
 
-/* 卡片主體 */
 .card {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -289,7 +310,6 @@ body {
     }
 }
 
-/* 外面圖片方案二（四個 10px 收角相框流） */
 .card-image-container {
     width: 100%;
     aspect-ratio: 16 / 9;
@@ -310,7 +330,6 @@ body {
     transform: scale(1.05);
 }
 
-/* 右上角三點點按鈕 */
 .card-more-btn {
     position: absolute;
     top: 16px;
@@ -332,7 +351,6 @@ body {
     color: var(--text-main);
 }
 
-/* 點開後出現的懸浮選單 */
 .more-menu {
     position: absolute;
     top: 45px;
@@ -362,7 +380,6 @@ body {
     background-color: #f1f3f4;
 }
 
-/* 卡片內部元素 */
 .card-tag {
     font-size: 0.75rem;
     font-weight: 700;
@@ -401,7 +418,6 @@ body {
     overflow: hidden;
 }
 
-/* 底部 Meta 與按鈕區塊 */
 .card-meta {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -423,7 +439,6 @@ body {
     color: var(--text-main);
 }
 
-/* 右下角愛心與分享按鈕組 */
 .meta-actions {
     display: flex;
     gap: 12px;
@@ -455,10 +470,10 @@ body {
 }
 
 /* ==========================================================================
-   5. 功能性元件（隱藏、載入哨兵、懸浮按鈕）
+   5. 功能性元組（純粹乾淨的全域隱藏盾牌）
    ========================================================================== */
 .hidden {
-    display: none !important;
+    display: none !important; /* 保持最純粹的隱藏，不夾雜動畫干擾全域 */
 }
 
 .loading-text, #sentinel {
@@ -472,6 +487,9 @@ body {
     align-items: center;
 }
 
+/* ==========================================================================
+   6. 右下角：回到頂部按鈕 (BTT)
+   ========================================================================== */
 .btt-btn {
     position: fixed;
     bottom: 24px;   
@@ -488,7 +506,7 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 999;
-    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
     box-sizing: border-box;
     flex-shrink: 0; 
 }
@@ -519,7 +537,153 @@ body {
 }
 
 /* ==========================================================================
-   6. 文章彈出視窗 (Modal) 樣式 - 終極安全防禦版
+   7. 左下角：固定懸浮聊天室 (💬 自帶彈出式記憶體太空艙動畫)
+   ========================================================================== */
+#chat-toggle-btn {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    width: 48px; /* 與回到頂部完美對稱 */
+    height: 48px;
+    border-radius: 50%;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+
+#chat-toggle-btn:hover {
+    transform: translateY(-4px); /* 與回到頂部同頻向上飄移 */
+    box-shadow: 0 4px 16px rgba(26, 115, 232, 0.25);
+    background-color: #1557b0;
+}
+
+#chat-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 10px;
+    height: 10px;
+    background-color: #ea4335;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+#chat-container {
+    position: fixed;
+    bottom: 84px;
+    left: 24px;
+    width: 340px;
+    height: 450px;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s; /* ✅ 完美修正：加入逗號與動態登場 */
+}
+
+/* 🧙‍♂️ 完美釋放：當聊天室隱藏時，往左下方優雅縮回滑落 */
+#chat-container.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(12px) scale(0.95);
+    display: flex !important; /* 確保不被全域 display:none 閹割動畫 */
+}
+
+.chat-header {
+    padding: 12px 16px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dadce0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#chat-status {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #3c4043;
+}
+
+#chat-close-x {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    color: #5f6368;
+    line-height: 1;
+}
+
+#chat-box {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background-color: rgba(255,255,255,0.4);
+}
+
+.chat-input-area {
+    padding: 12px;
+    border-top: 1px solid #dadce0;
+    display: flex;
+    gap: 8px;
+    background-color: #f8f9fa;
+}
+
+#chat-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #dadce0;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+#chat-input:focus {
+    border-color: var(--accent-color);
+}
+
+#chat-send-btn {
+    background: none;
+    border: none;
+    color: var(--accent-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #34a853;
+    border-radius: 50%;
+    display: inline-block;
+    animation: badgePulse 1.6s infinite;
+}
+
+/* ==========================================================================
+   8. 文章彈出視窗 (Modal) 與精緻壓縮排版
    ========================================================================== */
 .modal {
     position: fixed;
@@ -541,6 +705,7 @@ body {
     backdrop-filter: blur(4px); 
 }
 
+/* 💥 終極視覺壓縮：消滅彈窗大留白 */
 .modal-content {
     position: relative;
     background-color: var(--card-bg);
@@ -548,7 +713,11 @@ body {
     max-width: 650px;
     max-height: 82vh;
     border-radius: 20px;
-    padding: 28px 24px;     
+    padding: 16px !important;            
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;                   
     overflow-y: auto; 
     z-index: 2001;
     animation: slideUp 0.3s ease-out;
@@ -576,84 +745,6 @@ body {
     color: var(--text-main);
 }
 
-.modal-header h2 {
-    font-size: 1.35rem;
-    margin: 16px 0 8px 0;   
-    line-height: 1.4;
-    padding-right: 24px;    
-}
-
-.modal-meta {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin-bottom: 15px;
-}
-
-.modal-content hr {
-    border: 0;
-    border-top: 1px solid var(--border-color);
-    margin-bottom: 20px;
-}
-
-.modal-body {
-    font-size: 1.05rem;
-    color: #3c4043;
-    line-height: 1.8;
-    white-space: pre-wrap; 
-}
-
-/* 彈出大視窗圖片黃金比率裁切 - 驅魔防護版 */
-.modal-image-container {
-    width: 100%;
-    aspect-ratio: 16 / 9;   
-    overflow: hidden;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    white-space: normal;    
-}
-
-/* 彈出大視窗的圖片本體 */
-.modal-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;      
-    display: block;         
-}
-
-/* ==========================================================================
-   終極視覺淨化：徹底隱藏彈窗圓角框的萬惡白條（保留滾動功能）
-   ========================================================================== */
-
-/* 1. 針對 Firefox 以及舊版 Edge/IE */
-#article-modal,
-#article-modal .modal-content,
-#modal-snippet {
-    -ms-overflow-style: none;  
-    scrollbar-width: none;     
-}
-
-/* 2. 針對 Chrome, Safari, Opera, 以及手機核心 */
-#article-modal::-webkit-scrollbar,
-#article-modal .modal-content::-webkit-scrollbar,
-#modal-snippet::-webkit-scrollbar {
-    display: none !important;  
-}
-
-/* ==========================================================================
-   💥 終極視覺壓縮：消滅彈窗所有萬惡的大留白（精緻緊湊版）
-   ========================================================================== */
-
-/* 1. 強制外殼放棄上下拉開，改為從頂部緊湊排列 */
-#article-modal .modal-content {
-    padding: 16px !important;              
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-    gap: 8px !important;                   
-}
-
-/* 2. 制裁頂部標籤與標題的萬惡外邊距 */
 #modal-tag {
     margin: 0 0 2px 0 !important;
     padding: 0 !important;
@@ -667,17 +758,45 @@ body {
     font-size: 1.25rem !important;
 }
 
-/* 3. 制裁來源與時間的欄位間距 */
-#article-modal .modal-meta,
-#article-modal .meta-left,
-#article-modal div[style*="meta"] {
+.modal-meta {
+    font-size: 0.85rem;
+    color: var(--text-muted);
     margin: 0 0 4px 0 !important;
     padding: 0 !important;
     display: flex !important;
     align-items: center !important;
 }
 
-/* 4. 內文容器全面壓縮，內部所有元素一律用 10px 的微距緊咬 */
+.modal-content hr {
+    border: 0;
+    border-top: 1px solid var(--border-color);
+    margin-bottom: 8px;
+}
+
+.modal-body {
+    font-size: 1.05rem;
+    color: #3c4043;
+    line-height: 1.8;
+    white-space: pre-wrap; 
+}
+
+.modal-image-container {
+    width: 100%;
+    aspect-ratio: 16 / 9;   
+    overflow: hidden;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    white-space: normal;    
+}
+
+.modal-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;      
+    display: block;         
+}
+
 #modal-snippet {
     margin: 0 !important;
     padding: 0 !important;
@@ -686,7 +805,6 @@ body {
     gap: 10px !important; 
 }
 
-/* 5. 暴力清空所有被注入標籤（p, h4, div）的瀏覽器預設大邊距 */
 #modal-snippet p,
 #modal-snippet h4,
 #modal-snippet div {
@@ -694,7 +812,6 @@ body {
     padding: 0 !important;
 }
 
-/* 6. 微調淺藍色 AI 面板，內部保留舒適內襯，但外部絕不外擴 */
 #modal-ai-panel {
     padding: 10px 12px !important;
     margin: 0 !important;
@@ -706,16 +823,10 @@ body {
     margin-bottom: 4px !important; 
 }
 
-/* 7. 最底下的閱讀原文按鈕，頂部不需要額外拉開 */
 #modal-snippet a[href*="http"] {
     margin: 4px 0 0 0 !important;
 }
 
-/* ==========================================================================
-   袋鼠 AI 智慧排版特區：解救被壓縮的文字餅乾
-   ========================================================================== */
-
-/* 1. 恢復 AI 區塊內部的標準段落間距 */
 #article-modal #modal-snippet #ai-response-box p {
     margin: 0 0 10px 0 !important;    
     padding: 0 !important;
@@ -724,7 +835,6 @@ body {
     font-size: 0.92rem !important;
 }
 
-/* 2. 讓 AI 自動產生的 **粗體標題** 華麗轉身，變成搶眼的專家小看板 */
 #article-modal #modal-snippet #ai-response-box strong {
     display: block !important;         
     margin: 14px 0 6px 0 !important;   
@@ -733,11 +843,23 @@ body {
     font-weight: 600 !important;
 }
 
-/* ==========================================================================
-   ⚙️ 齒輪設定與開發者資訊：終極超引力壓縮
-   ========================================================================== */
+/* 隱藏彈窗滾動條 */
+#article-modal,
+#article-modal .modal-content,
+#modal-snippet {
+    -ms-overflow-style: none;  
+    scrollbar-width: none;     
+}
 
-/* 1. 斬斷固定高度：強迫彈窗外殼放棄撐高 */
+#article-modal::-webkit-scrollbar,
+#article-modal .modal-content::-webkit-scrollbar,
+#modal-snippet::-webkit-scrollbar {
+    display: none !important;  
+}
+
+/* ==========================================================================
+   9. 齒輪設定視窗緊湊化
+   ========================================================================== */
 #settings-modal .modal-content,
 .developer-modal .modal-content {
     height: auto !important;               
@@ -746,7 +868,6 @@ body {
     justify-content: flex-start !important;
 }
 
-/* 2. 清空內部分隔層的預設推擠效應 */
 #settings-modal .modal-body,
 #settings-modal .settings-body,
 #settings-modal .developer-info,
@@ -760,7 +881,6 @@ body {
     display: block !important;             
 }
 
-/* 3. 對彈窗內所有一級子元件進行全面 margin 繳械 */
 #settings-modal .modal-content > *,
 #settings-modal .modal-body > *,
 .developer-info > * {
@@ -768,7 +888,6 @@ body {
     margin-bottom: 6px !important;         
 }
 
-/* 4. 頂部大標題與關閉按鈕那一列的微距調整 */
 #settings-modal .modal-header,
 #settings-modal h2,
 #settings-modal .modal-title {
@@ -777,7 +896,6 @@ body {
     line-height: 1.2 !important;
 }
 
-/* 5. 底部的複製按鈕、關閉按鈕特區緊湊化 */
 #settings-modal .modal-footer,
 #settings-modal .settings-actions {
     margin-top: 8px !important;            

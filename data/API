@@ -1,19 +1,19 @@
 export default {
-  async fetch(request, env, ctx) {
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    };
+  async fetch(request, env, ctx) {
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    };
 
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders });
-    }
+    if (request.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
+    }
 
-    const { searchParams } = new URL(request.url);
-    
+    const { searchParams } = new URL(request.url);
+    
     // ==========================================================================
-    // 🎨【AI 封面生圖核心 - 🔙 真正還原最原始、直接回傳純圖片二進位版本】
+    // 🎨【AI 封面生圖核心 - 直接回傳純圖片二進位高流速版本】
     // ==========================================================================
     const aiImageTitle = searchParams.get('aiImageTitle'); 
     if (aiImageTitle) {
@@ -22,15 +22,11 @@ export default {
           throw new Error("系統提示：環境變數中缺少 AI 綁定。");
         }
 
-        // 🚀 現場高流速作畫，直接拉取 Cloudflare 內建免費 Stable Diffusion 的原始圖片流
-                // 🚀 調整提示詞，去掉賽博龐克，換成萬用現代網頁封面風格
         const response = await env.AI.run('@cf/stabilityai/stable-diffusion-xl-base-1.0', {
           prompt: `Modern clean professional web cover illustration, graphic design, minimalist flat style about: ${aiImageTitle}`,
           num_steps: 20
         });
 
-        // 🎯 核心關鍵：直接把原始二進位圖片流（response）噴回去，Content-Type 牢牢咬死 image/jpeg！
-        // 這樣你的前端 <img src="..."> 才能在千分之一秒內直接看懂、當場滿圖炸開！
         return new Response(response, {
           headers: { 
             "Content-Type": "image/jpeg", 
@@ -43,159 +39,196 @@ export default {
       }
     }
 
+    // ==========================================================================
+    // 🧠【Gemma 4 31B 數位 KOL 版 + 純淨中文內文基準反推洗滌器】
+    // ==========================================================================
+    const aiTitle = searchParams.get('aiTitle');
+    const aiSnippet = searchParams.get('aiSnippet');
+    if (aiTitle) {
+      if (!env.GEMINI_API_KEY) {
+        return new Response("系統提示：請先至 Cloudflare 後台設定 GEMINI_API_KEY 環境變數。", { headers: corsHeaders });
+      }
 
+      try {
+        const cacheKey = "ai_summary:" + encodeURIComponent(aiTitle).substring(0, 150);
+        
+        if (env.NEWS_CACHE_KV) {
+          const cachedPayload = await env.NEWS_CACHE_KV.get(cacheKey);
+          if (cachedPayload) {
+            console.log("🎯 完美命中邊緣 KV 快取！秒回乾淨防爆額度");
+            return new Response(cachedPayload, {
+              headers: { 
+                "Content-Type": "text/plain; charset=utf-8",
+                "X-Content-Type-Options": "nosniff",
+                ...corsHeaders 
+              }
+            });
+          }
+        }
 
-    // ==========================================================================
-    // 🧠【Gemma 4 31B 數位 KOL 版 + 🎯 依照老兄旨意：純淨中文內文基準反推洗滌器】
-    // ==========================================================================
-    const aiTitle = searchParams.get('aiTitle');
-    const aiSnippet = searchParams.get('aiSnippet');
-    if (aiTitle) {
-      if (!env.GEMINI_API_KEY) {
-        return new Response("系統提示：請先至 Cloudflare 後台設定 GEMINI_API_KEY 環境變數。", { headers: corsHeaders });
-      }
-
-      try {
-        const cacheKey = "ai_summary:" + encodeURIComponent(aiTitle).substring(0, 150);
-        
-        if (env.NEWS_CACHE_KV) {
-          const cachedPayload = await env.NEWS_CACHE_KV.get(cacheKey);
-          if (cachedPayload) {
-            console.log("🎯 完美命中邊緣 KV 快取！秒回乾淨防爆額度");
-            return new Response(cachedPayload, {
-              headers: { 
-                "Content-Type": "text/plain; charset=utf-8",
-                "X-Content-Type-Options": "nosniff",
-                ...corsHeaders 
-              }
-            });
-          }
-        }
-
-        const gemmaApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemma-4-31b-it:streamGenerateContent?key=${env.GEMINI_API_KEY}`;
-        
-        const googleResponse = await fetch(gemmaApiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              { 
-                role: "user", 
-                parts: [{ 
-                  text: `請直接扮演在社群上幽默且輕鬆氣的KOL網紅。請完全依據下方提供的新聞內容，精準捕捉核心話題，以深度且富有社群爆發力的網紅視角討論與話題延伸視角，進行輕鬆的社群趨勢與推演，產出一篇500至800字、完全使用繁體中文的分析。無任何前言或過渡寒暄。只產生繁體中文資訊。第一行必須直接開始輸出第一個「**關鍵字標題**」。
+        const gemmaApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemma-4-31b-it:streamGenerateContent?key=${env.GEMINI_API_KEY}`;
+        
+        const googleResponse = await fetch(gemmaApiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              { 
+                role: "user", 
+                parts: [{ 
+                  text: `請直接扮演在社群上幽默且輕鬆氣的KOL網紅。請完全依據下方提供的新聞內容，精準捕捉核心話題，以深度且富有社群爆發力的網紅視角討論與話題延伸視角，進行輕鬆的社群趨勢與推演，產出一篇500至800字、完全使用繁體中文的分析。無任何前言或過渡寒暄。只產生繁體中文資訊。第一行必須直接開始輸出第一個「**關鍵字標題**」。
 
 [新聞內容]
 標題：${aiTitle}
 摘要：${aiSnippet}
 
 [正式報告本體]` 
-                }] 
-              }
-            ],
-            generationConfig: {
-              maxOutputTokens: 2048,
-              temperature: 0.68
-            }
-          })
-        });
+                }] 
+              }
+            ],
+            generationConfig: {
+              maxOutputTokens: 2048,
+              temperature: 0.68
+            }
+          })
+        });
 
-        if (!googleResponse.ok) {
-          const errorData = await googleResponse.json();
-          throw new Error(errorData.error?.message || `Google API 回傳錯誤: ${googleResponse.status}`);
-        }
+        if (!googleResponse.ok) {
+          const errorData = await googleResponse.json();
+          throw new Error(errorData.error?.message || `Google API 回傳錯誤: ${googleResponse.status}`);
+        }
 
-        const fullJsonText = await googleResponse.text();
+        const fullJsonText = await googleResponse.text();
 
-        // ==========================================================================
-        // 🧙‍♂️ 💥【黑科技核心：老兄專屬 — 純淨中文後半段基準物理斷頭台】
-        // ==========================================================================
-        let rawAiText = "";
-        try {
-          const parsed = JSON.parse(fullJsonText);
-          if (Array.isArray(parsed)) {
-            rawAiText = parsed.map(chunk => chunk.candidates?.[0]?.content?.parts?.[0]?.text || "").join("");
-          } else {
-            rawAiText = parsed.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          }
-        } catch (jsonErr) {
-          const textMatches = [...fullJsonText.matchAll(/"text":\s*"(.*?)"/g)];
-          rawAiText = textMatches.map(m => m[1]).join("");
-        }
+        let rawAiText = "";
+        try {
+          const parsed = JSON.parse(fullJsonText);
+          if (Array.isArray(parsed)) {
+            rawAiText = parsed.map(chunk => chunk.candidates?.[0]?.content?.parts?.[0]?.text || "").join("");
+          } else {
+            rawAiText = parsed.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          }
+        } catch (jsonErr) {
+          const textMatches = [...fullJsonText.matchAll(/"text":\s*"(.*?)"/g)];
+          rawAiText = textMatches.map(m => m[1]).join("");
+        }
 
-        let cleanedText = rawAiText.trim();
+        let cleanedText = rawAiText.trim();
+        const thoughtLineRegex = /^\s*[\*\-\d\.]*\s*\*?\*?\b(role|task|section|check|constraint|requirement|input|output|formatting|thought|outline|analyst|surface|professional|tone|words?|count)\b.*/gim;
+        
+        let lastThoughtEndIdx = 0;
+        let match;
+        while ((match = thoughtLineRegex.exec(cleanedText)) !== null) {
+          lastThoughtEndIdx = match.index + match[0].length;
+        }
 
-        // 1. 🔍 雷達全域掃描：精準抓出所有屬於「英文思考草稿」的特徵行特徵
-        // 包含 role:, task:, section, check constraints, words count 等等
-        const thoughtLineRegex = /^\s*[\*\-\d\.]*\s*\*?\*?\b(role|task|section|check|constraint|requirement|input|output|formatting|thought|outline|analyst|surface|professional|tone|words?|count)\b.*/gim;
-        
-        let lastThoughtEndIdx = 0;
-        let match;
-        while ((match = thoughtLineRegex.exec(cleanedText)) !== null) {
-          lastThoughtEndIdx = match.index + match[0].length;
-        }
+        if (lastThoughtEndIdx > 0) {
+          const remainingText = cleanedText.substring(lastThoughtEndIdx);
+          const firstChineseIdx = remainingText.search(/[\u4e00-\u9fa5]/);
+          
+          if (firstChineseIdx !== -1) {
+            let startSliceIdx = firstChineseIdx;
+            const lookbackStr = remainingText.substring(Math.max(0, firstChineseIdx - 5), firstChineseIdx);
+            const markerMatch = lookbackStr.match(/([\*【#]+)$/);
+            if (markerMatch) {
+              startSliceIdx = firstChineseIdx - markerMatch[1].length;
+            }
+            cleanedText = remainingText.substring(startSliceIdx);
+          } else {
+            cleanedText = remainingText;
+          }
+        } else {
+          const firstChineseIdx = cleanedText.search(/[\u4e00-\u9fa5]/);
+          if (firstChineseIdx !== -1) {
+            cleanedText = cleanedText.substring(firstChineseIdx);
+          }
+        }
 
-        // 2. ⚡ 依照老兄鐵律：從最後一個英文思考行的屁股後面切斷，往後數第一個中文字就是絕對純淨的開頭！
-        if (lastThoughtEndIdx > 0) {
-          const remainingText = cleanedText.substring(lastThoughtEndIdx);
-          const firstChineseIdx = remainingText.search(/[\u4e00-\u9fa5]/);
-          
-          if (firstChineseIdx !== -1) {
-            // 💡 補丁防線：往左看 5 個字元，如果砍到標題，自動把被誤傷的 ** 或 【 撈回來
-            let startSliceIdx = firstChineseIdx;
-            const lookbackStr = remainingText.substring(Math.max(0, firstChineseIdx - 5), firstChineseIdx);
-            const markerMatch = lookbackStr.match(/([\*【#]+)$/);
-            if (markerMatch) {
-              startSliceIdx = firstChineseIdx - markerMatch[1].length;
-            }
-            cleanedText = remainingText.substring(startSliceIdx);
-          } else {
-            cleanedText = remainingText;
-          }
-        } else {
-          // 3. 備援防線：萬一完全沒抓到任何英文特徵行，直接直驅第一個中文字開頭
-          const firstChineseIdx = cleanedText.search(/[\u4e00-\u9fa5]/);
-          if (firstChineseIdx !== -1) {
-            cleanedText = cleanedText.substring(firstChineseIdx);
-          }
-        }
+        cleanedText = cleanedText.trim();
+        const safeTextForJson = JSON.stringify(cleanedText);
+        const finalResponsePayload = `{"candidates":[{"content":{"parts":[{"text":${safeTextForJson}}]}}]}`;
 
-        cleanedText = cleanedText.trim();
+        if (env.NEWS_CACHE_KV && finalResponsePayload) {
+          ctx.waitUntil(env.NEWS_CACHE_KV.put(cacheKey, finalResponsePayload, { expirationTtl: 2592000 }));
+          console.log("💾 依據純淨中文基準洗滌的完美報告成功寫入全球 KV！");
+        }
 
-        // 將洗得一塵不染的純淨內文，重新包裝回標準安全的 JSON 結構噴回前端
-        const safeTextForJson = JSON.stringify(cleanedText);
-        const finalResponsePayload = `{"candidates":[{"content":{"parts":[{"text":${safeTextForJson}}]}}]}`;
-        // ==========================================================================
+        return new Response(finalResponsePayload, {
+          headers: { 
+            "Content-Type": "text/plain; charset=utf-8",
+            "X-Content-Type-Options": "nosniff",
+            ...corsHeaders 
+          }
+        });
 
-        // 💾 將完美無雜質的最終結晶封裝進 KV 口袋
-        if (env.NEWS_CACHE_KV && finalResponsePayload) {
-          ctx.waitUntil(env.NEWS_CACHE_KV.put(cacheKey, finalResponsePayload, { expirationTtl: 2592000 }));
-          console.log("💾 依據純淨中文基準洗滌的完美報告成功寫入全球 KV！");
-        }
+      } catch (aiError) {
+        return new Response(`分析暫時無法載入（${aiError.message}），請參考上方摘要或點擊下方閱讀原文。`, { headers: { "Content-Type": "text/plain; charset=utf-8", ...corsHeaders } });
+      }
+    }
 
-        return new Response(finalResponsePayload, {
-          headers: { 
-            "Content-Type": "text/plain; charset=utf-8",
-            "X-Content-Type-Options": "nosniff",
-            ...corsHeaders 
-          }
-        });
+    // ==========================================================================
+    // 📰 【常規路由】：核心變數重灌歸位，整合巴哈姆特 GNN RSS 綠色通道
+    // ==========================================================================
+    const currentTag = searchParams.get('tag') || 'all';
+    const browserHeader = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" };
+    
+    const sources = {
+      "cna": { url: "https://feeds.feedburner.com/cnaFirstNews", name: "中央通訊社", tag: "焦點新聞" },
+      "tech": { url: "https://technews.tw/feed/", name: "科技新報 TechNews", tag: "科技新知" },
+      // 🎮 🎯【巴哈水管歸位】：直接對接官方不設防饋送源
+      "game": { url: "https://rss.bahamut.com.tw/gnn.xml", name: "巴哈姆特 GNN 新聞", tag: "遊戲情報" },
+      "stock": { url: "https://tw.stock.yahoo.com/rss?category=tw-market", name: "Yahoo 奇摩股市", tag: "財經新聞" }
+    };
 
-      } catch (aiError) {
-        return new Response(`分析暫時無法載入（${aiError.message}），請參考上方摘要或點擊下方閱讀原文。`, { headers: { "Content-Type": "text/plain; charset=utf-8", ...corsHeaders } });
-      }
-    }
+    try {
+      let finalItems = [];
+      if (currentTag === "all" || currentTag === "全部摘要") {
+        const fetchPromises = Object.keys(sources).map(async (key) => {
+          try {
+            const res = await fetch(sources[key].url, { headers: browserHeader });
+            if (!res.ok) return [];
+            const xml = await res.text();
+            return parseRssToJSON(xml, sources[key].name, sources[key].tag);
+          } catch (e) { return []; }
+        });
+        
+        const results = await Promise.all(fetchPromises);
+        const maxLength = Math.max(...results.map(arr => arr.length));
+        
+        for (let i = 0; i < maxLength; i++) {
+          for (let j = 0; j < results.length; j++) { 
+            if (results[j][i]) finalItems.push(results[j][i]); 
+          }
+        }
+      } else {
+        let selected = sources.cna;
+        if (currentTag === "遊戲情報" || currentTag === "game") { selected = sources.game; }
+        else if (currentTag === "科技新知" || currentTag === "tech") { selected = sources.tech; }
+        else if (currentTag === "財經新聞" || currentTag === "stock") { selected = sources.stock; }
+        
+        const response = await fetch(selected.url, { headers: browserHeader });
+        if (!response.ok) throw new Error(`${selected.name} 伺服器異常`);
+        const xmlText = await response.text();
+        finalItems = parseRssToJSON(xmlText, selected.name, selected.tag);
+      }
+      
+      if (finalItems.length > 0) finalItems.forEach((item, index) => item.isFeatured = (index === 0));
+      return new Response(JSON.stringify(finalItems), { headers: { "Content-Type": "application/json; charset=utf-8", ...corsHeaders } });
+    
+    } catch (error) {
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, statusText: "Internal Server Error", headers: corsHeaders });
+    }
+  }
+};
 
 // ==========================================================================
-// 🧙‍♂️ 輕量級安全防卡死 RSS 解析器（兩步拆解自癒版）
+// 🧙‍♂️ 輕量級安全防卡死 RSS 解析器（兩步拆解自癒版 - 移至最底部標準 Scope）
 // ==========================================================================
 function parseRssToJSON(xmlText, sourceName, defaultTagName) {
   const items = [];
-  
-  // ⚡ 核心改裝 1：用最單純的線性規則切出每一篇新聞的 <item>，絕不回溯
   const itemRegex = /<item>([\s\S]*?)<\/item>/g;
   let match;
   
-  // ⚡ 核心改裝 2：獨立的 CDATA 清洗助手，跟標籤提取徹底分家
   const cleanCdata = (str) => {
     if (!str) return "";
     return str.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1").trim();
@@ -204,31 +237,26 @@ function parseRssToJSON(xmlText, sourceName, defaultTagName) {
   while ((match = itemRegex.exec(xmlText)) !== null) {
     const itemContent = match[1];
     
-    // 🎯 第一步：用最單純的結構把區塊撈出來
     const titleMatch = itemContent.match(/<title>([\s\S]*?)<\/title>/i);
     const linkMatch = itemContent.match(/<link>([\s\S]*?)<\/link>/i);
     const descMatch = itemContent.match(/<description>([\s\S]*?)<\/description>/i);
     const pubDateMatch = itemContent.match(/<pubDate>([\s\S]*?)<\/pubDate>/i);
     
-    // 🎯 第二步：解開 CDATA 糖衣
     const title = cleanCdata(titleMatch ? titleMatch[1] : "");
     const link = cleanCdata(linkMatch ? linkMatch[1] : "");
     const description = cleanCdata(descMatch ? descMatch[1] : "");
     const pubDate = pubDateMatch ? pubDateMatch[1] : "";
 
-    // 🎯 第三步：精準挖取巴哈原圖
     let imageUrl = "";
     const mediaMatch = itemContent.match(/<(media:content|media:thumbnail|enclosure)[^>]+url=["']([^"']+)["']/i);
     
     if (mediaMatch) {
       imageUrl = mediaMatch[2];
     } else {
-      // 剝掉 CDATA 後，巴哈的原圖網址就赤裸裸躺在 description 裡，直接用最穩的 <img> 規則挖它！
       const imgMatch = description.match(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/i);
       if (imgMatch) imageUrl = imgMatch[1];
     }
 
-    // 🎯 第四步：時間轉換
     let timestamp = 0; 
     let displayTime = "今日";
     if (pubDate) {
@@ -241,7 +269,6 @@ function parseRssToJSON(xmlText, sourceName, defaultTagName) {
       } catch (e) {}
     }
     
-    // 🎯 第五步：刮除所有 HTML 標籤，留下純淨的新聞摘要
     const cleanSnippet = description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
     
     items.push({
@@ -259,103 +286,4 @@ function parseRssToJSON(xmlText, sourceName, defaultTagName) {
     });
   }
   return items;
-}
-
-
-    try {
-      let finalItems = [];
-      if (currentTag === "all" || currentTag === "全部摘要") {
-        const fetchPromises = Object.keys(sources).map(async (key) => {
-          try {
-            const res = await fetch(sources[key].url, { headers: browserHeader });
-            if (!res.ok) return [];
-            const xml = await res.text();
-            return parseRssToJSON(xml, sources[key].name, sources[key].tag);
-          } catch (e) { return []; }
-        });
-        
-        const results = await Promise.all(fetchPromises);
-        const maxLength = Math.max(...results.map(arr => arr.length));
-        
-        for (let i = 0; i < maxLength; i++) {
-          for (let j = 0; j < results.length; j++) { 
-            if (results[j][i]) finalItems.push(results[j][i]); 
-          }
-        }
-      } else {
-        let selected = sources.cna;
-        if (currentTag === "遊戲情報" || currentTag === "game") { selected = sources.game; }
-        else if (currentTag === "科技新知" || currentTag === "tech") { selected = sources.tech; }
-        else if (currentTag === "財經新聞" || currentTag === "stock") { selected = sources.stock; }
-        
-        const response = await fetch(selected.url, { headers: browserHeader });
-        if (!response.ok) throw new Error(`${selected.name} 伺服器異常`);
-        const xmlText = await response.text();
-        finalItems = parseRssToJSON(xmlText, selected.name, selected.tag);
-      }
-      
-      if (finalItems.length > 0) finalItems.forEach((item, index) => item.isFeatured = (index === 0));
-      return new Response(JSON.stringify(finalItems), { headers: { "Content-Type": "application/json; charset=utf-8", ...corsHeaders } });
-    
-    } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, statusText: "Internal Server Error", headers: corsHeaders });
-    }
-  }
-};
-
-// ==========================================================================
-// 🧙‍♂️ 輕量級安全 Regex RSS 解析器
-// ==========================================================================
-function parseRssToJSON(xmlText, sourceName, defaultTagName) {
-  const items = [];
-  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-  let match;
-  
-  while ((match = itemRegex.exec(xmlText)) !== null) {
-    const itemContent = match[1];
-    const titleMatch = itemContent.match(/<title>[\s\S]*?(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]+))[\s\S]*?<\/title>/);
-    let title = titleMatch ? (titleMatch[1] || titleMatch[2] || "") : "";
-    
-    const linkMatch = itemContent.match(/<link>[\s\S]*?(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]+))[\s\S]*?<\/link>/);
-    let link = linkMatch ? (linkMatch[1] || linkMatch[2] || "") : "";
-    
-    const descMatch = itemContent.match(/<description>[\s\S]*?(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]+))[\s\S]*?<\/description>/);
-    let description = descMatch ? (descMatch[1] || descMatch[2] || "") : "";
-    
-    const pubDateMatch = itemContent.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
-    const pubDate = pubDateMatch ? pubDateMatch[1] : "";
-
-    let imageUrl = "";
-    const mediaMatch = itemContent.match(/<(media:content|media:thumbnail|enclosure)[^>]+url=["']([^"']+)["']/i);
-    const imgMatch = itemContent.match(/<img[^>]+src=["']([^"']+)["']/i);
-    if (mediaMatch) imageUrl = mediaMatch[2]; else if (imgMatch) imageUrl = imgMatch[1];
-
-    let timestamp = 0; 
-    let displayTime = "今日";
-    if (pubDate) {
-      try {
-        const dateObj = new Date(pubDate.trim());
-        if (!isNaN(dateObj.getTime())) { 
-          timestamp = dateObj.getTime(); 
-          displayTime = dateObj.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false }); 
-        }
-      } catch (e) {}
-    }
-    
-    const cleanSnippet = description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
-    items.push({
-      id: `news-${Math.random().toString(36).substring(2, 9)}`,
-      tag: defaultTagName, 
-      isFeatured: false, 
-      isImportant: items.length < 2,
-      title: title.trim(), 
-      snippet: cleanSnippet.substring(0, 120) + (cleanSnippet.length > 120 ? "..." : ""),
-      source: sourceName, 
-      time: displayTime, 
-      link: link.trim(), 
-      timestamp: timestamp, 
-      image: imageUrl
-    });
-  }
-  return items;
 }

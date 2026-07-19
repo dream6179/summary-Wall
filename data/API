@@ -167,30 +167,70 @@ export default {
     }
 
     // ==========================================================================
-    // 📰 【常規路由】：核心變數重灌歸位，收編 Google 新聞、Yahoo 新聞與 5 大快訊
+    // 📰 【常規路由】：終極情報庫 47 大水管陣列全量收編
     // ==========================================================================
     const currentTag = searchParams.get('tag') || 'all';
     const browserHeader = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" };
     
     const sources = {
+      // 基礎大型主流源
       "cna": { url: "https://feeds.feedburner.com/cnaFirstNews", name: "中央通訊社", tag: "焦點新聞" },
       "tech": { url: "https://technews.tw/feed/", name: "科技新報 TechNews", tag: "科技新知" },
       "google": { url: "https://news.google.com/rss?hl=zh-TW&gl=TW&ceid=TW:zh-Hant", name: "Google 新聞", tag: "焦點新聞" },
       "stock": { url: "https://tw.stock.yahoo.com/rss?category=tw-market", name: "Yahoo 奇摩股市", tag: "財經新聞" },
       "yahoo": { url: "https://tw.news.yahoo.com/rss/headline", name: "Yahoo 奇摩新聞", tag: "焦點新聞" },
       
-      // 🎯【全新快訊特區】：直接加入這些 Google Alert
-      "steam": { url: "https://www.google.com/alerts/feeds/03089914302568114771/14965260082479668401", name: "Steam 快訊", tag: "遊戲情報" },
-      "threads": { url: "https://www.google.com/alerts/feeds/03089914302568114771/3132982940859436245", name: "Threads 快訊", tag: "科技新知" },
-      "quake": { url: "https://www.google.com/alerts/feeds/03089914302568114771/3132982940859433136", name: "地震快訊", tag: "焦點新聞" },
-      "typhoon": { url: "https://www.google.com/alerts/feeds/03089914302568114771/3132982940859436019", name: "颱風快訊", tag: "焦點新聞" },
-      "youtuber": { url: "https://www.google.com/alerts/feeds/03089914302568114771/15743577773675874169", name: "YouTuber 快訊", tag: "遊戲情報" }
+      // 🎯【Google Alerts 42條快訊情報陣列】
+      "world": { url: "https://www.google.com/alerts/feeds/03089914302568114771/11413712657166008818", name: "世界", tag: "焦點新聞" },
+      "ai": { url: "https://www.google.com/alerts/feeds/03089914302568114771/1630737477913354626", name: "AI", tag: "科技新知" },
+      "google_alert": { url: "https://www.google.com/alerts/feeds/03089914302568114771/7489960799535125911", name: "Google", tag: "科技新知" },
+      "openai": { url: "https://www.google.com/alerts/feeds/03089914302568114771/10796785984389491586", name: "OpenAi", tag: "科技新知" },
+      "anti_fraud": { url: "https://www.google.com/alerts/feeds/03089914302568114771/14605724135252546820", name: "165防詐", tag: "焦點新聞" },
+      "steam": { url: "https://www.google.com/alerts/feeds/03089914302568114771/14965260082479668401", name: "Steam", tag: "遊戲情報" },
+      "threads": { url: "https://www.google.com/alerts/feeds/03089914302568114771/3132982940859436245", name: "Threads", tag: "科技新知" },
+      "ig": { url: "https://www.google.com/alerts/feeds/03089914302568114771/10500013769614370947", name: "IG", tag: "科技新知" },
+      "line": { url: "https://www.google.com/alerts/feeds/03089914302568114771/12644211476644781829", name: "LINE", tag: "科技新知" },
+      "quake": { url: "https://www.google.com/alerts/feeds/03089914302568114771/3132982940859433136", name: "地震", tag: "焦點新聞" },
+      "typhoon": { url: "https://www.google.com/alerts/feeds/03089914302568114771/3132982940859436019", name: "颱風", tag: "焦點新聞" },
+      "travel": { url: "https://www.google.com/alerts/feeds/03089914302568114771/12644211476644779425", name: "旅遊", tag: "焦點新聞" },
+      "discount": { url: "https://www.google.com/alerts/feeds/03089914302568114771/11037068091744728610", name: "優惠", tag: "焦點新聞" },
+      "movie": { url: "https://www.google.com/alerts/feeds/03089914302568114771/1477782307643542649", name: "電影", tag: "焦點新聞" },
+      "food_safety": { url: "https://www.google.com/alerts/feeds/03089914302568114771/754910147286595113", name: "食安", tag: "焦點新聞" },
+      "exam": { url: "https://www.google.com/alerts/feeds/03089914302568114771/17466747626748889104", name: "考試", tag: "焦點新聞" },
+      "anime": { url: "https://www.google.com/alerts/feeds/03089914302568114771/754910147286597531", name: "動畫", tag: "遊戲情報" },
+      "sports": { url: "https://www.google.com/alerts/feeds/03089914302568114771/3245004848972335579", name: "賽事", tag: "焦點新聞" },
+      "awards": { url: "https://www.google.com/alerts/feeds/03089914302568114771/12950693594701856486", name: "獎項", tag: "焦點新聞" },
+      "amusement": { url: "https://www.google.com/alerts/feeds/03089914302568114771/4665243327248063596", name: "樂園", tag: "焦點新聞" },
+      "youtuber": { url: "https://www.google.com/alerts/feeds/03089914302568114771/15743577773675874169", name: "YouTuber", tag: "遊戲情報" },
+      "netflix": { url: "https://www.google.com/alerts/feeds/03089914302568114771/20456644923921380", name: "Netflix", tag: "焦點新聞" },
+      "hoyolab": { url: "https://www.google.com/alerts/feeds/03089914302568114771/666688571668246132", name: "HoYoLAB", tag: "遊戲情報" },
+      "apple": { url: "https://www.google.com/alerts/feeds/03089914302568114771/5162349343442675803", name: "Apple", tag: "科技新知" },
+      "samsung": { url: "https://www.google.com/alerts/feeds/03089914302568114771/15546254646039255039", name: "Samsung", tag: "科技新知" },
+      "fet": { url: "https://www.google.com/alerts/feeds/03089914302568114771/15546254646039255881", name: "遠傳電信", tag: "科技新知" },
+      "cht": { url: "https://www.google.com/alerts/feeds/03089914302568114771/15546254646039256982", name: "中華電信", tag: "科技新知" },
+      "twm": { url: "https://www.google.com/alerts/feeds/03089914302568114771/5162349343442674459", name: "台灣大哥大", tag: "科技新知" },
+      "transit": { url: "https://www.google.com/alerts/feeds/03089914302568114771/11037068091744728602", name: "大眾運輸", tag: "焦點新聞" },
+      "accident": { url: "https://www.google.com/alerts/feeds/03089914302568114771/4087681159775727631", name: "車禍", tag: "焦點新聞" },
+      "mobile": { url: "https://www.google.com/alerts/feeds/03089914302568114771/8856504161352749328", name: "手機", tag: "科技新知" },
+      "influencer": { url: "https://www.google.com/alerts/feeds/03089914302568114771/8856504161352750384", name: "網紅", tag: "遊戲情報" },
+      "oil": { url: "https://www.google.com/alerts/feeds/03089914302568114771/7680168413232190536", name: "石油", tag: "財經新聞" },
+      "art": { url: "https://www.google.com/alerts/feeds/03089914302568114771/11322652353799506500", name: "藝術", tag: "焦點新聞" },
+      "tech_3c": { url: "https://www.google.com/alerts/feeds/03089914302568114771/10796785984389489454", name: "3C", tag: "科技新知" },
+      "us": { url: "https://www.google.com/alerts/feeds/03089914302568114771/11413712657166012315", name: "美國", tag: "焦點新聞" },
+      "jp": { url: "https://www.google.com/alerts/feeds/03089914302568114771/17852910417562708615", name: "日本", tag: "焦點新聞" },
+      "kr": { url: "https://www.google.com/alerts/feeds/03089914302568114771/17466747626748889299", name: "韓國", tag: "焦點新聞" },
+      "eu": { url: "https://www.google.com/alerts/feeds/03089914302568114771/11413712657166012225", name: "歐洲", tag: "焦點新聞" },
+      "ru": { url: "https://www.google.com/alerts/feeds/03089914302568114771/17852910417562709833", name: "俄國", tag: "焦點新聞" },
+      "cn": { url: "https://www.google.com/alerts/feeds/03089914302568114771/13822050221143868675", name: "中國", tag: "焦點新聞" },
+      "sea": { url: "https://www.google.com/alerts/feeds/03089914302568114771/18349176172306982772", name: "東南亞", tag: "焦點新聞" }
     };
 
     try {
       let finalItems = [];
       if (currentTag === "all" || currentTag === "全部摘要") {
-        const fetchPromises = Object.keys(sources).map(async (key) => {
+        // ⚡【效能防禦盾牌】：47個源頭如果一次全發，大廳加載會超時。我們精選出幾大核心基本面與重大突發（天災防詐）來做大廳混流。
+        const lobbyKeys = ["cna", "tech", "google", "yahoo", "steam", "ai", "anti_fraud", "quake", "typhoon"];
+        const fetchPromises = lobbyKeys.map(async (key) => {
           try {
             const res = await fetch(sources[key].url, { headers: browserHeader });
             if (!res.ok) return [];
@@ -208,17 +248,32 @@ export default {
           }
         }
       } else {
-        // 🎯 核心精準分流：優先尋找對應的單一關鍵字（如 ?tag=steam, ?tag=threads）
+        // 🎯【智慧型動態分流】：優先比對英文 Key（如 ?tag=steam, ?tag=samsung）
         let selected = sources[currentTag];
         
-        // 備援機制：如果使用者傳遞的是舊版大分類名稱，進行相容轉向
+        // 備援比對機制：如果前端傳過來的是中文關鍵字（如 ?tag=遠傳電信），自動去資料庫撈出對應的物件
         if (!selected) {
-          if (currentTag === "遊戲情報" || currentTag === "game") { selected = sources.steam; }
-          else if (currentTag === "科技新知" || currentTag === "tech") { selected = sources.tech; }
-          else if (currentTag === "財經新聞" || currentTag === "stock") { selected = sources.stock; }
-          else if (currentTag === "焦點新聞" || currentTag === "google") { selected = sources.google; }
-          else if (currentTag === "yahoo") { selected = sources.yahoo; }
-          else { selected = sources.cna; } // 終極安全網
+          const foundKey = Object.keys(sources).find(key => 
+            key.toLowerCase() === currentTag.toLowerCase() || 
+            sources[key].name === currentTag
+          );
+          
+          if (foundKey) {
+            selected = sources[foundKey];
+          } else {
+            // 舊大分類相容映射
+            const categoryMap = {
+              "焦點新聞": sources.google,
+              "科技新知": sources.tech,
+              "遊戲情報": sources.steam,
+              "財經新聞": sources.stock,
+              "game": sources.steam,
+              "tech": sources.tech,
+              "stock": sources.stock,
+              "all": sources.google
+            };
+            selected = categoryMap[currentTag] || sources.cna;
+          }
         }
         
         const response = await fetch(selected.url, { headers: browserHeader });
@@ -241,7 +296,6 @@ export default {
 // ==========================================================================
 function parseRssToJSON(xmlText, sourceName, defaultTagName) {
   const items = [];
-  // 🎯【雙標籤捕獲】：同時精準切出 RSS (item) 與 Atom (entry) 區塊
   const itemRegex = /<(item|entry)>([\s\S]*?)<\/\1>/g;
   let match;
   

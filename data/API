@@ -175,7 +175,14 @@ export default {
     const sources = {
       "cna": { url: "https://feeds.feedburner.com/cnaFirstNews", name: "中央通訊社", tag: "焦點新聞" },
       "tech": { url: "https://technews.tw/feed/", name: "科技新報 TechNews", tag: "科技新知" },
-      "game": { url: "https://rss.bahamut.com.tw/gnn.xml", name: "巴哈姆特 GNN 新聞", tag: "遊戲情報" },
+// 🎮 🎯【終極轉向】：避開巴哈封鎖，改抓 Google News 聚合的 GNN 綠色通道
+"game": { 
+  url: "https://news.google.com/rss/search?q=site:gnn.gamer.com.tw&hl=zh-TW&gl=TW&ceid=TW:zh-Hant", 
+  name: "巴哈姆特 GNN 新聞 (Google聚合)", 
+  tag: "遊戲情報" 
+},
+
+
       "stock": { url: "https://tw.stock.yahoo.com/rss?category=tw-market", name: "Yahoo 奇摩股市", tag: "財經新聞" },
       
       // 📰 🎯【全新大軍壓境】：一秒接通 Yahoo 官方即時焦點頭條！

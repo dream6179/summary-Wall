@@ -1,6 +1,6 @@
-// ==========================================================================
-// 1. 全域狀態與初始化
-// ==========================================================================
+/* ==========================================================================
+   1. 全域狀態與初始化
+   ========================================================================== */
 let allSummaries = [];
 let currentFilteredData = [];
 
@@ -23,14 +23,14 @@ let itemsSincePromo = 6;
 
 const API_BASE_URL = "https://news-api.zhtttttt.workers.dev";
 
-// ==========================================================================
-// 🚀 賽博聊天室前端連線引擎
-// ==========================================================================
+// 💬 賽博聊天室專屬全域配置
 let socket = null;
 const chatUrl = "wss://news-wall-chat.zhtttttt.workers.dev/ws";
-// 暫時隨機生成一個暱稱，之後你可以改成抓取使用者輸入
 const myUsername = "情報員_" + Math.floor(Math.random() * 9000 + 1000); 
 
+/* ==========================================================================
+   2. 🚀 賽博聊天室核心連線引擎
+   ========================================================================== */
 function initChatEngine() {
   console.log("⚡ 正在開通與太空艙的即時連線...");
   socket = new WebSocket(chatUrl);
@@ -46,18 +46,25 @@ function initChatEngine() {
       const data = JSON.parse(event.data);
 
       if (data.system) {
-        // 📢 處理系統點名：例如「新情報員加入。🔥 目前在線：3 人」
+        // 📢 處理系統點名（例如：🔥 目前在線：3 人）
         updateSystemStatus(data.message);
       } else {
-        // 💬 處理一般人的對話訊息
+        // 💬 處理一般情報員的對話訊息
         appendMessageBubble(data.user, data.text, data.user === myUsername);
+        
+        // 🎯 未讀小紅點提示：如果收到「別人的訊息」，而且「聊天室目前是關閉狀態」
+        const chatContainer = document.getElementById('chat-container');
+        if (chatContainer && chatContainer.classList.contains('hidden') && data.user !== myUsername) {
+            const chatBadge = document.getElementById('chat-badge');
+            if (chatBadge) chatBadge.classList.remove('hidden'); // 亮起左下角未讀小提示燈！
+        }
       }
     } catch (err) {
       console.error("❌ 解析廣播封包失敗:", err);
     }
   };
 
-  // 3. 自動重連機制（萬一伺服器抽筋或網路斷開，10秒後自動復活）
+  // 3. 自動重連機制（萬一網路波動斷開，10秒後自動復活）
   socket.onclose = () => {
     console.log("🟥 與太空艙斷開連線，10秒後嘗試自動重連...");
     setTimeout(() => {
@@ -66,7 +73,7 @@ function initChatEngine() {
   };
 }
 
-// ✍️ 送出訊息的觸發函式（例如綁定在點擊「送出」按鈕或按下 Enter 時）
+// ✍️ 送出訊息的發射器
 function sendMessage(textInput) {
   if (!socket || socket.readyState !== WebSocket.OPEN || !textInput.trim()) return;
 
@@ -76,61 +83,13 @@ function sendMessage(textInput) {
     timestamp: Date.now()
   };
 
-  // 啪一聲，毫秒級送上雲端記憶體
+  // 啪一聲，毫秒級送上雲端記憶體太空艙
   socket.send(JSON.stringify(payload));
 }
 
-// ==========================================================================
-// 🎨 UI 渲染介面介接（真正負責把資料噴上畫面！）
-// ==========================================================================
-function updateSystemStatus(msg) {
-  const statusEl = document.getElementById("chat-status");
-  if (statusEl) {
-    statusEl.innerText = msg; // 動態更新在線人數（例如：🔥 目前在線：3 人）
-  } else {
-    console.log("📢 系統提示：", msg);
-  }
-}
-
-function appendMessageBubble(user, text, isMe) {
-  const chatBox = document.getElementById("chat-box");
-  if (!chatBox) {
-    console.log(`💬 [${user}] 說: ${text}`);
-    return;
-  }
-  
-  // 建立賽博風對話氣泡
-  const bubbleWrapper = document.createElement("div");
-  bubbleWrapper.style.margin = "8px 0";
-  bubbleWrapper.style.display = "flex";
-  bubbleWrapper.style.flexDirection = "column";
-  bubbleWrapper.style.alignItems = isMe ? "flex-end" : "flex-start";
-
-  bubbleWrapper.innerHTML = `
-    <span style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 2px;">${escapeHtml(user)}</span>
-    <div style="
-      padding: 8px 12px; 
-      border-radius: 12px; 
-      font-size: 0.9rem; 
-      max-width: 75%; 
-      word-break: break-all;
-      background-color: ${isMe ? "var(--accent-color)" : "#e8eaed"}; 
-      color: ${isMe ? "white" : "var(--text-main)"};
-      border-bottom-${isMe ? "right" : "left"}-radius: 2px;
-    ">
-      ${escapeHtml(text)}
-    </div>
-  `;
-
-  chatBox.appendChild(bubbleWrapper);
-  
-  // 🧙‍♂️ 貼心細節：有人發話時，對話框自動滾動到最底部
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-// ==========================================================================
-// 2. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖進化)
-// ==========================================================================
+/* ==========================================================================
+   3. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖進化)
+   ========================================================================== */
 function renderCards(dataArray, append = false) {
     const container = document.getElementById("wall-container");
     if (!container) return;
@@ -367,24 +326,50 @@ function renderCards(dataArray, append = false) {
     });
 }
 
-// ==========================================================================
-// 3. 智慧本地快取與自訂選單記憶初始化
-// ==========================================================================
+/* ==========================================================================
+   4. 智慧本地快取與自訂多選硬碟記憶初始化
+   ========================================================================== */
 function initCustomStorage() {
-    const selectEl = document.getElementById("custom-source-select");
-    if (!selectEl) return;
+    const dropdownMenu = document.getElementById("custom-dropdown-menu");
+    if (!dropdownMenu) return;
     
-    let savedCustomTag = localStorage.getItem("user_custom_tag");
-    if (!savedCustomTag) {
-        savedCustomTag = "steam";
-        localStorage.setItem("user_custom_tag", savedCustomTag);
+    // 從快取撈出已選的分類陣列（例如：["steam","hoyolab"]）
+    let savedTagsRaw = localStorage.getItem("user_custom_tags_array");
+    let savedTags = [];
+    
+    if (savedTagsRaw) {
+        try { savedTags = JSON.parse(savedTagsRaw); } catch(e) { savedTags = []; }
     }
-    selectEl.value = savedCustomTag;
+
+    // 走訪所有勾選盒，如果命中快取就直接勾選
+    const checkboxes = dropdownMenu.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(box => {
+        if (savedTags.includes(box.value)) {
+            box.checked = true;
+        }
+    });
+
+    // 重新校正自訂按鈕的標籤排版文字
+    updateCustomButtonText();
 }
 
-// ==========================================================================
-// 4. 無限滾動邏輯
-// ==========================================================================
+function updateCustomButtonText() {
+    const btn = document.getElementById("custom-tab-btn");
+    const dropdownMenu = document.getElementById("custom-dropdown-menu");
+    if (!btn || !dropdownMenu) return;
+
+    const checkedBoxes = dropdownMenu.querySelectorAll('input[type="checkbox"]:checked');
+    
+    if (checkedBoxes.length === 0) {
+        btn.innerText = "自訂"; // 零選狀態
+    } else {
+        btn.innerText = `自訂 (${checkedBoxes.length})`; // 複選狀態
+    }
+}
+
+/* ==========================================================================
+   5. 無限滾動邏輯
+   ========================================================================== */
 function loadMore() {
     if (currentFilteredData.length === 0 && testTemplates.length === 0 && promoTemplates.length === 0 && adTemplates.length === 0) return;
 
@@ -428,9 +413,9 @@ function setupInfiniteScroll() {
     observer.observe(sentinel);
 }
 
-// ==========================================================================
-// 5. 資料過濾與中央調度
-// ==========================================================================
+/* ==========================================================================
+   6. 資料過濾與中央調度
+   ========================================================================== */
 function filterAndRenderData() {
     let filtered = allSummaries;
     if (searchQuery.trim() !== '') {
@@ -455,30 +440,25 @@ function filterAndRenderData() {
     }
 }
 
-// 📡 中央調度入口：負責向後端完全體 Worker 發送請求並初始化指針
 async function loadSummaryData() {
     const container = document.getElementById("wall-container");
     
-    // 🚀【秒讀取骨骼盾牌】：如果這是第一次打開網頁（allSummaries 長度為 0），立刻先同步灌入本地快取資料！
-    // 這樣網路不好的使用者一進網頁瞬間就能看到豐富的推廣文章，完全不需要面對空蕩蕩的畫面等轉圈圈！
     if (container && allSummaries.length === 0) {
         try {
-            // 先把本地靜態資源（流速接近 0 毫秒）同步全量拉下來
             const [testRes, promoRes, adRes] = await Promise.all([
                 fetch('./data/summaries.json').then(r => r.json()).catch(() => []),
                 fetch('./data/promo.json').then(r => r.json()).catch(() => []),
-                fetch('./data/ads.json').then(r => r.json()).catch(() => [])
+                fetch('./data/ads.json').then(r => r.json()).catch(() => []),
             ]);
             testTemplates = testRes; 
             promoTemplates = promoRes; 
             adTemplates = adRes;
 
-            // 🎯 拿 promo.json 的內容當作「極速預載卡片」直接鋪滿瀑布流牆面！
             if (promoTemplates.length > 0 && allSummaries.length === 0) {
                 const preloadItems = promoTemplates.map(item => ({
                     ...item,
                     id: `promo-pre-${Math.random().toString(36).substring(2, 9)}`,
-                    time: "精選推薦" // 標記為推薦，增加質感
+                    time: "精選推薦" 
                 }));
                 renderCards(preloadItems); 
             } else {
@@ -488,26 +468,22 @@ async function loadSummaryData() {
             container.innerHTML = `<div class="loading-text">📡 正在連線核心情報庫...</div>`;
         }
     } else if (container) {
-        // 💡 當使用者在後續點選不同分頁標籤切換時，才顯示優雅的轉頁提示
         container.innerHTML = `<div class="loading-text">📡 正在同步最新情報...</div>`;
     }
 
     const fetchUrl = `${API_BASE_URL}/?tag=${encodeURIComponent(currentTag)}`;
 
     try {
-        // 📡 當使用者滑動看著預載文章時，背景早已向遠端的 Worker 全力發送真新聞請求
         const response = await fetch(fetchUrl);
         if (!response.ok) throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`);
         allSummaries = await response.json();
         
-        // 🎯 只要真新聞一到部，瞬間無縫覆蓋，並完全啟動混流指針與無限滾動！
         filterAndRenderData();
         if (!observer) setupInfiniteScroll();
         
     } catch (error) {
         console.error("真實新聞連線失敗，啟動本地快取備援", error);
         try {
-            // 如果連線真的不幸全面斷線，直接沿用剛才加載好的本地模板作為降級備援
             if (testTemplates.length === 0) {
                 const fallback = await fetch('./data/summaries.json');
                 allSummaries = await fallback.json();
@@ -523,9 +499,9 @@ async function loadSummaryData() {
     }
 }
 
-// ==========================================================================
-// 6. 每小時在背景連線一次 Worker 抓取真新聞
-// ==========================================================================
+/* ==========================================================================
+   7. 每小時在背景連線一次 Worker 抓取真新聞
+   ========================================================================== */
 function simulateLiveUpdates() {
     setInterval(async () => {
         if (allSummaries.length === 0) return;
@@ -563,18 +539,20 @@ function simulateLiveUpdates() {
     }, 3600000); 
 }
 
-// ==========================================================================
-// 7. 事件監聽設定（整合自訂頁籤與記憶體聯動）
-// ==========================================================================
+/* ==========================================================================
+   8. 全域事件監聽組合中心 (🎯 完美封裝封閉，防禦衝突與雙重連線)
+   ========================================================================== */
 function setupEventListeners() {
     const searchInput = document.getElementById('search-input');
     const clearSearchBtn = document.getElementById('clear-search');
-    const tabsContainer = document.getElementById('filter-tabs-container');
-    const selectEl = document.getElementById("custom-source-select");
+    const tabsContainer = document.querySelector('.tab-container'); // 修正為你的新 class 名稱
     const customTabBtn = document.getElementById("custom-tab-btn");
+    const customDropdownMenu = document.getElementById("custom-dropdown-menu");
+    const customClearBtn = document.getElementById("custom-clear-btn");
     const bttBtn = document.getElementById('back-to-top');
     const badge = document.getElementById('new-data-badge');
 
+    // A. 搜尋框監聽控制
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             searchQuery = e.target.value;
@@ -590,41 +568,87 @@ function setupEventListeners() {
         });
     }
 
-    // 🎯 1. 導覽頁籤中央處理：完美融合固定頁籤與自訂頁籤
+    // B. 導覽頁籤中央調度中心（完美合體固定頁籤與多選開關）
     if (tabsContainer) {
         tabsContainer.addEventListener('click', (e) => {
             const clickedTab = e.target.closest('.tab, .tab-btn'); 
             if (!clickedTab) return;
             
-            let tag = clickedTab.dataset.tag;
-            
-            // 如果點到的是自訂按鈕本體，則即時讀取下拉選單目前的數值
-            if (tag === "custom" && selectEl) {
-                tag = selectEl.value;
+            const tag = clickedTab.dataset.tag;
+
+            // 如果點到的是全部、焦點或科技
+            if (tag !== "custom") {
+                if (customDropdownMenu) customDropdownMenu.classList.add('hidden'); // 收起多選彈窗
+                document.querySelectorAll('.tab, .tab-btn').forEach(tab => tab.classList.remove('active'));
+                clickedTab.classList.add('active');
+                
+                currentTag = tag; 
+                loadSummaryData(); 
+            } else {
+                // 🎯 如果點到的是「自訂」情報按鈕 ➡️ 切換多選面板顯示
+                e.stopPropagation();
+                if (customDropdownMenu) customDropdownMenu.classList.toggle('hidden');
+                
+                document.querySelectorAll('.tab, .tab-btn').forEach(tab => tab.classList.remove('active'));
+                if (customTabBtn) customTabBtn.classList.add('active');
+
+                triggerCustomMultiFilter();
             }
-
-            document.querySelectorAll('.tab, .tab-btn').forEach(tab => tab.classList.remove('active'));
-            clickedTab.classList.add('active');
-            
-            currentTag = tag; 
-            loadSummaryData(); 
         });
     }
 
-    // 🎯 2. 下拉選單即時變更：強制高亮自訂標籤、記憶硬碟、立即換牌
-    if (selectEl) {
-        selectEl.addEventListener('change', (e) => {
-            const newSelectedTag = e.target.value;
-            localStorage.setItem("user_custom_tag", newSelectedTag);
-            
-            document.querySelectorAll('.tab, .tab-btn').forEach(btn => btn.classList.remove('active'));
-            if (customTabBtn) customTabBtn.classList.add('active');
+    // C. 多選選單內部控制（防冒泡漏氣、監聽打勾）
+    if (customDropdownMenu) {
+        customDropdownMenu.addEventListener('click', (e) => {
+            e.stopPropagation(); // 防止點擊選單內部時選單自己縮回去
+        });
 
-            currentTag = newSelectedTag;
-            loadSummaryData();
+        customDropdownMenu.addEventListener('change', (e) => {
+            if (e.target.type === 'checkbox') {
+                updateCustomButtonText();   // 更新自訂 (X) 數字
+                triggerCustomMultiFilter(); // 換牌重新拉資料
+            }
         });
     }
 
+    // D. 🧹 「一鍵清空已選」按鈕核心邏輯
+    if (customClearBtn) {
+        customClearBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!customDropdownMenu) return;
+            
+            const checkboxes = customDropdownMenu.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(box => box.checked = false);
+
+            updateCustomButtonText();   // 按鈕名字重設回「自訂」
+            triggerCustomMultiFilter(); // 立即同步發送空過濾
+        });
+    }
+
+    // E. 點擊網頁任何其他空白處，自動收起自訂多選彈窗
+    document.addEventListener('click', () => {
+        if (customDropdownMenu && !customDropdownMenu.classList.contains('hidden')) {
+            customDropdownMenu.classList.add('hidden');
+        }
+    });
+
+    // 🧙‍♂️ 打包勾選狀態送至後端
+    function triggerCustomMultiFilter() {
+        if (!customDropdownMenu) return;
+        const checkedBoxes = customDropdownMenu.querySelectorAll('input[type="checkbox"]:checked');
+        
+        let selectedValues = [];
+        checkedBoxes.forEach(box => selectedValues.push(box.value));
+
+        localStorage.setItem("user_custom_tags_array", JSON.stringify(selectedValues));
+
+        // 🎯 特權規格：如果完全沒勾選，currentTag 帶空字串，Worker 不會命中任何固定類型
+        currentTag = selectedValues.length === 0 ? "" : selectedValues.join(',');
+        
+        loadSummaryData(); 
+    }
+
+    // F. 回到頂部控制邏輯
     const refreshToTopWithNewData = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         if (badge) badge.classList.add('hidden');
@@ -661,6 +685,7 @@ function setupEventListeners() {
         badge.addEventListener('click', () => { refreshToTopWithNewData(); });
     }
 
+    // G. 訊息細節與設定 Modal 監聽控制
     const modal = document.getElementById('article-modal');
     if (modal) {
         const modalClose = modal.querySelector('.modal-close');
@@ -699,13 +724,112 @@ function setupEventListeners() {
             }
         });
     }
-} 
 
-// ==========================================================================
-// 8. 工具函式與統一開機入口
-// ==========================================================================
+    // ==========================================================================
+    // 💬 賽博聊天室 UI 開關與送出控制
+    // ==========================================================================
+    const chatToggleBtn = document.getElementById('chat-toggle-btn');
+    const chatContainer = document.getElementById('chat-container');
+    const chatCloseX = document.getElementById('chat-close-x');
+    const chatInput = document.getElementById('chat-input');
+    const chatSendBtn = document.getElementById('chat-send-btn');
+    const chatBadge = document.getElementById('chat-badge');
+
+    if (chatToggleBtn && chatContainer) {
+        chatToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            chatContainer.classList.toggle('hidden');
+            if (!chatContainer.classList.contains('hidden')) {
+                if (chatBadge) chatBadge.classList.add('hidden'); // 清除未讀紅點
+                if (chatInput) chatInput.focus();
+                const chatBox = document.getElementById("chat-box");
+                if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        });
+    }
+
+    if (chatCloseX && chatContainer) {
+        chatCloseX.addEventListener('click', () => {
+            chatContainer.classList.add('hidden');
+        });
+    }
+
+    if (chatContainer) {
+        chatContainer.addEventListener('click', (e) => {
+            e.stopPropagation(); // 防止點選聊天視窗內部的任何元件觸發背景事件
+        });
+    }
+
+    const handleCommitMessage = () => {
+        if (!chatInput) return;
+        const text = chatInput.value;
+        if (text.trim()) {
+            sendMessage(text);
+            chatInput.value = '';
+        }
+    };
+
+    if (chatInput) {
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleCommitMessage();
+            }
+        });
+    }
+
+    if (chatSendBtn) {
+        chatSendBtn.addEventListener('click', handleCommitMessage);
+    }
+} // 👈 🎯 完美將 setupEventListeners 關閉，防線建立完成！
+
+/* ==========================================================================
+   9. 工具函式、UI 渲染與開機大印
+   ========================================================================== */
 function escapeHtml(string) {
     return String(string).replace(/[&<>"']/g, s => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));
+}
+
+function updateSystemStatus(msg) {
+  const statusEl = document.getElementById("chat-status");
+  if (statusEl) {
+    statusEl.innerText = msg; 
+  } else {
+    console.log("📢 系統提示：", msg);
+  }
+}
+
+function appendMessageBubble(user, text, isMe) {
+  const chatBox = document.getElementById("chat-box");
+  if (!chatBox) {
+    console.log(`💬 [${user}] 說: ${text}`);
+    return;
+  }
+  
+  const bubbleWrapper = document.createElement("div");
+  bubbleWrapper.style.margin = "8px 0";
+  bubbleWrapper.style.display = "flex";
+  bubbleWrapper.style.flexDirection = "column";
+  bubbleWrapper.style.alignItems = isMe ? "flex-end" : "flex-start";
+
+  bubbleWrapper.innerHTML = `
+    <span style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 2px;">${escapeHtml(user)}</span>
+    <div style="
+      padding: 8px 12px; 
+      border-radius: 12px; 
+      font-size: 0.9rem; 
+      max-width: 75%; 
+      word-break: break-all;
+      background-color: ${isMe ? "var(--accent-color)" : "#e8eaed"}; 
+      color: ${isMe ? "white" : "var(--text-main)"};
+      border-bottom-${isMe ? "right" : "left"}-radius: 2px;
+    ">
+      ${escapeHtml(text)}
+    </div>
+  `;
+
+  chatBox.appendChild(bubbleWrapper);
+  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 window.addEventListener('popstate', (event) => {
@@ -717,9 +841,9 @@ window.addEventListener('popstate', (event) => {
 
 // ⚡ 唯一、純淨的中央開機引擎
 document.addEventListener("DOMContentLoaded", () => {
-    initCustomStorage();     // 1. 優先從本機硬碟同步自訂選單位置
-    loadSummaryData();       // 2. 啟動對接後端 Worker (內含極速預載盾牌)
-    setupEventListeners();   // 3. 綁定全網頁事件監聽
+    initCustomStorage();     // 1. 優先從本機硬碟記憶體同步自訂勾選位置
+    loadSummaryData();       // 2. 啟動對接新聞 Worker (內含極速預載骨骼盾牌)
+    setupEventListeners();   // 3. 統一發動全網頁事件監聽（包含聊天室按鈕與多選連動）
     simulateLiveUpdates();   // 4. 開啟背景即時重新整理
-    initChatEngine();        // 5. 🎯 確保網頁元件都蓋好後，正式潛入即時聊天室！
+    initChatEngine();        // 5. 🎯 網頁全部蓋好後，開通極速光纖，正式潛入即時聊天太空艙！
 });

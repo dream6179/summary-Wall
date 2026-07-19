@@ -34,36 +34,24 @@ export default {
         }
 
         // ==========================================================================
-        // 🚀【你的核心生圖區塊】：真正驚動 Google 奈米香蕉 2 大腦！
+        // 🎨【動態繪圖路由】：利用 Stable Diffusion 現場高流速作畫
         // ==========================================================================
-        if (!env.GEMINI_API_KEY) {
-          throw new Error("系統提示：缺少 GEMINI_API_KEY 環境變數。");
+        if (!env.AI) {
+          throw new Error("系統提示：未在 Cloudflare 後台綁定 AI 萬能大腦（請檢查 env.AI 是否綁定）。");
         }
 
-        // 🍌 直接呼叫 Nano Banana 2 官方生圖閘門
-        const bananaApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/nano-banana-2:generateImages?key=${env.GEMINI_API_KEY}`;
-        
-        const imageResponse = await fetch(bananaApiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: `Professional digital art, cyberpunk technology style illustration about: ${aiImageTitle}`,
-            numberOfImages: 1,
-            aspectRatio: "16:9"
-          })
+        // 🚀 調度邊緣算力，對準標題高流速噴發作畫
+        const response = await env.AI.run('@cf/stabilityai/stable-diffusion-xl-base-1.0', {
+          prompt: `Cyberpunk digital art style, high technology concept vector illustration, professional web cover design about: ${aiImageTitle}`,
+          num_steps: 20
         });
 
-        if (!imageResponse.ok) {
-          throw new Error(`奈米香蕉生圖引擎回應異常: ${imageResponse.status}`);
-        }
-
-        const imageJson = await imageResponse.json();
+        // 🔄 這裡是一記漂亮的魔術：將內建 SD 吐出來的二進位圖片流，當場轉成網頁秒懂的 Base64 Data URL
+        // 這樣就能夠完美偽裝成網址，順順利利鎖進 KV 口袋和噴回前端了！
+        const base64Image = btoa(String.fromCharCode(...new Uint8Array(response)));
+        const realUrl = `data:image/jpeg;base64,${base64Image}`;
         
-        // 🍌 提取 Google 規格的二進位 Base64 數據，封裝成前端網頁秒懂的 Data URL
-        const base64Bytes = imageJson.generatedImages[0].image.imageBytes;
-        const realUrl = `data:image/jpeg;base64,${base64Bytes}`;
-        
-        // 打包成你的原始 Payload 變數，完美跟下方的 KV 與 Response 銜接！
+        // 重新封裝成前端舊版 app.js 最喜歡的 JSON 格式
         const finalImagePayload = JSON.stringify({ imageUrl: realUrl });
         // ==========================================================================
 
@@ -83,6 +71,7 @@ export default {
         return new Response(JSON.stringify({ error: imgError.message }), { headers: corsHeaders });
       }
     }
+
 
 
     // ==========================================================================

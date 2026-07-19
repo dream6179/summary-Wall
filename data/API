@@ -171,13 +171,19 @@ export default {
     // ==========================================================================
     const currentTag = searchParams.get('tag') || 'all';
     const browserHeader = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" };
-    
     const sources = {
+      // 原有的分類
       "cna": { url: "https://feeds.feedburner.com/cnaFirstNews", name: "中央通訊社", tag: "焦點新聞" },
       "tech": { url: "https://technews.tw/feed/", name: "科技新報 TechNews", tag: "科技新知" },
       "google": { url: "https://news.google.com/rss?hl=zh-TW&gl=TW&ceid=TW:zh-Hant", name: "Google 新聞", tag: "焦點新聞" },
-      "stock": { url: "https://tw.stock.yahoo.com/rss?category=tw-market", name: "Yahoo 奇摩股市", tag: "財經新聞" },
-      "yahoo": { url: "https://tw.news.yahoo.com/rss/headline", name: "Yahoo 奇摩新聞", tag: "焦點新聞" }
+      "yahoo": { url: "https://tw.news.yahoo.com/rss/headline", name: "Yahoo 奇摩新聞", tag: "焦點新聞" },
+      
+      // 🎯【全新快訊特區】：直接加入這些 Google Alert
+      "steam": { url: "https://www.google.com/alerts/feeds/03089914302568114771/14965260082479668401", name: "Steam 快訊", tag: "遊戲情報" },
+      "threads": { url: "https://www.google.com/alerts/feeds/03089914302568114771/3132982940859436245", name: "Threads 快訊", tag: "科技新知" },
+      "quake": { url: "https://www.google.com/alerts/feeds/03089914302568114771/3132982940859433136", name: "地震快訊", tag: "焦點新聞" },
+      "typhoon": { url: "https://www.google.com/alerts/feeds/03089914302568114771/3132982940859436019", name: "颱風快訊", tag: "焦點新聞" },
+      "youtuber": { url: "https://www.google.com/alerts/feeds/03089914302568114771/15743577773675874169", name: "YouTuber 快訊", tag: "遊戲情報" }
     };
 
     try {
@@ -229,7 +235,8 @@ export default {
 // ==========================================================================
 function parseRssToJSON(xmlText, sourceName, defaultTagName) {
   const items = [];
-  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+  // 🎯【雙標籤捕獲】：同時支援 RSS (item) 與 Atom (entry)
+  const itemRegex = /<(item|entry)>([\s\S]*?)<\/\1>/g;
   let match;
   
   const cleanCdata = (str) => {
@@ -238,21 +245,23 @@ function parseRssToJSON(xmlText, sourceName, defaultTagName) {
   };
 
   while ((match = itemRegex.exec(xmlText)) !== null) {
-    const itemContent = match[1];
+    const itemContent = match[2]; // match[1] 是標籤名，match[2] 是內容
     
+    // 支援 Atom 的 <title> 或 <summary>
     const titleMatch = itemContent.match(/<title>([\s\S]*?)<\/title>/i);
-    const linkMatch = itemContent.match(/<link>([\s\S]*?)<\/link>/i);
-    const descMatch = itemContent.match(/<description>([\s\S]*?)<\/description>/i);
-    const pubDateMatch = itemContent.match(/<pubDate>([\s\S]*?)<\/pubDate>/i);
+    // 支援 RSS <link> 或 Atom <link href="...">
+    const linkMatch = itemContent.match(/<link[^>]*href=["']([^"']+)["']|<link>([\s\S]*?)<\/link>/i);
+    const descMatch = itemContent.match(/<(description|summary)>([\s\S]*?)<\/\1>/i);
+    const pubDateMatch = itemContent.match(/<(pubDate|updated|published)>([\s\S]*?)<\/\1>/i);
     
     const title = cleanCdata(titleMatch ? titleMatch[1] : "");
-    const link = cleanCdata(linkMatch ? linkMatch[1] : "");
-    const description = cleanCdata(descMatch ? descMatch[1] : "");
-    const pubDate = pubDateMatch ? pubDateMatch[1] : "";
+    const link = linkMatch ? (linkMatch[1] || linkMatch[2] || "") : "";
+    const description = cleanCdata(descMatch ? descMatch[2] : "");
+    const pubDate = pubDateMatch ? pubDateMatch[2] : "";
 
+    // 圖片提取邏輯不變
     let imageUrl = "";
     const mediaMatch = itemContent.match(/<(media:content|media:thumbnail|enclosure)[^>]+url=["']([^"']+)["']/i);
-    
     if (mediaMatch) {
       imageUrl = mediaMatch[2];
     } else {
@@ -260,18 +269,7 @@ function parseRssToJSON(xmlText, sourceName, defaultTagName) {
       if (imgMatch) imageUrl = imgMatch[1];
     }
 
-    let timestamp = 0; 
-    let displayTime = "今日";
-    if (pubDate) {
-      try {
-        const dateObj = new Date(pubDate.trim());
-        if (!isNaN(dateObj.getTime())) { 
-          timestamp = dateObj.getTime(); 
-          displayTime = dateObj.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false }); 
-        }
-      } catch (e) {}
-    }
-    
+    // 處理日期與摘要
     const cleanSnippet = description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
     
     items.push({
@@ -282,9 +280,9 @@ function parseRssToJSON(xmlText, sourceName, defaultTagName) {
       title: title, 
       snippet: cleanSnippet.substring(0, 120) + (cleanSnippet.length > 120 ? "..." : ""),
       source: sourceName, 
-      time: displayTime, 
+      time: "更新", 
       link: link, 
-      timestamp: timestamp, 
+      timestamp: Date.now(), 
       image: imageUrl
     });
   }

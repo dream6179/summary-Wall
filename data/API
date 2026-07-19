@@ -167,7 +167,7 @@ export default {
     }
 
     // ==========================================================================
-    // 📰 【常規路由】：核心變數重灌歸位，整合巴哈姆特 GNN RSS 綠色通道
+    // 📰 【常規路由】：核心變數重灌歸位，追加 Yahoo 即時焦點新聞
     // ==========================================================================
     const currentTag = searchParams.get('tag') || 'all';
     const browserHeader = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" };
@@ -175,10 +175,13 @@ export default {
     const sources = {
       "cna": { url: "https://feeds.feedburner.com/cnaFirstNews", name: "中央通訊社", tag: "焦點新聞" },
       "tech": { url: "https://technews.tw/feed/", name: "科技新報 TechNews", tag: "科技新知" },
-      // 🎮 🎯【巴哈水管歸位】：直接對接官方不設防饋送源
       "game": { url: "https://rss.bahamut.com.tw/gnn.xml", name: "巴哈姆特 GNN 新聞", tag: "遊戲情報" },
-      "stock": { url: "https://tw.stock.yahoo.com/rss?category=tw-market", name: "Yahoo 奇摩股市", tag: "財經新聞" }
+      "stock": { url: "https://tw.stock.yahoo.com/rss?category=tw-market", name: "Yahoo 奇摩股市", tag: "財經新聞" },
+      
+      // 📰 🎯【全新大軍壓境】：一秒接通 Yahoo 官方即時焦點頭條！
+      "yahoo": { url: "https://tw.news.yahoo.com/rss/headline", name: "Yahoo 奇摩新聞", tag: "焦點新聞" }
     };
+
 
     try {
       let finalItems = [];

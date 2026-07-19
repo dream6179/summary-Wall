@@ -83,7 +83,7 @@ function sendMessage(textInput) {
     timestamp: Date.now()
   };
 
-  // 啪一聲，毫秒級送上雲端記憶體太空艙
+  // 毫秒級送上雲端記憶體太空艙
   socket.send(JSON.stringify(payload));
 }
 
@@ -150,7 +150,7 @@ function renderCards(dataArray, append = false) {
                     </button>
                     <button class="action-btn share-btn" title="分享">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/>
+                            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5(1.25).81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/>
                         </svg>
                     </button>
                 </div>
@@ -333,7 +333,6 @@ function initCustomStorage() {
     const dropdownMenu = document.getElementById("custom-dropdown-menu");
     if (!dropdownMenu) return;
     
-    // 從快取撈出已選的分類陣列（例如：["steam","hoyolab"]）
     let savedTagsRaw = localStorage.getItem("user_custom_tags_array");
     let savedTags = [];
     
@@ -341,7 +340,6 @@ function initCustomStorage() {
         try { savedTags = JSON.parse(savedTagsRaw); } catch(e) { savedTags = []; }
     }
 
-    // 走訪所有勾選盒，如果命中快取就直接勾選
     const checkboxes = dropdownMenu.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(box => {
         if (savedTags.includes(box.value)) {
@@ -349,7 +347,6 @@ function initCustomStorage() {
         }
     });
 
-    // 重新校正自訂按鈕的標籤排版文字
     updateCustomButtonText();
 }
 
@@ -361,9 +358,9 @@ function updateCustomButtonText() {
     const checkedBoxes = dropdownMenu.querySelectorAll('input[type="checkbox"]:checked');
     
     if (checkedBoxes.length === 0) {
-        btn.innerText = "自訂"; // 零選狀態
+        btn.innerText = "自訂"; 
     } else {
-        btn.innerText = `自訂 (${checkedBoxes.length})`; // 複選狀態
+        btn.innerText = `自訂 (${checkedBoxes.length})`; 
     }
 }
 
@@ -500,7 +497,7 @@ async function loadSummaryData() {
 }
 
 /* ==========================================================================
-   7. 每小時在背景連線一次 Worker 抓取真新聞
+   7. 背景同步更新（每小時）
    ========================================================================== */
 function simulateLiveUpdates() {
     setInterval(async () => {
@@ -540,19 +537,19 @@ function simulateLiveUpdates() {
 }
 
 /* ==========================================================================
-   8. 全域事件監聽組合中心 (🎯 完美封裝封閉，防禦衝突與雙重連線)
+   8. 全域事件監聽組合中心（🎯 完美閉合，修復大括號與頁籤選擇器）
    ========================================================================== */
 function setupEventListeners() {
     const searchInput = document.getElementById('search-input');
     const clearSearchBtn = document.getElementById('clear-search');
-    const tabsContainer = document.querySelector('.tab-container'); // 修正為你的新 class 名稱
+    const tabsContainer = document.querySelector('.tab-container'); // 🎯 修正：抓取新版 class
     const customTabBtn = document.getElementById("custom-tab-btn");
     const customDropdownMenu = document.getElementById("custom-dropdown-menu");
     const customClearBtn = document.getElementById("custom-clear-btn");
     const bttBtn = document.getElementById('back-to-top');
     const badge = document.getElementById('new-data-badge');
 
-    // A. 搜尋框監聽控制
+    // A. 搜尋功能監聽
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             searchQuery = e.target.value;
@@ -568,7 +565,7 @@ function setupEventListeners() {
         });
     }
 
-    // B. 導覽頁籤中央調度中心（完美合體固定頁籤與多選開關）
+    // B. 導覽頁籤中央處理（合體固定頁籤與多選開關）
     if (tabsContainer) {
         tabsContainer.addEventListener('click', (e) => {
             const clickedTab = e.target.closest('.tab, .tab-btn'); 
@@ -576,16 +573,15 @@ function setupEventListeners() {
             
             const tag = clickedTab.dataset.tag;
 
-            // 如果點到的是全部、焦點或科技
             if (tag !== "custom") {
-                if (customDropdownMenu) customDropdownMenu.classList.add('hidden'); // 收起多選彈窗
+                if (customDropdownMenu) customDropdownMenu.classList.add('hidden'); 
                 document.querySelectorAll('.tab, .tab-btn').forEach(tab => tab.classList.remove('active'));
                 clickedTab.classList.add('active');
                 
                 currentTag = tag; 
                 loadSummaryData(); 
             } else {
-                // 🎯 如果點到的是「自訂」情報按鈕 ➡️ 切換多選面板顯示
+                // 點擊自訂按鈕 ➡️ 開關多選面板
                 e.stopPropagation();
                 if (customDropdownMenu) customDropdownMenu.classList.toggle('hidden');
                 
@@ -597,21 +593,21 @@ function setupEventListeners() {
         });
     }
 
-    // C. 多選選單內部控制（防冒泡漏氣、監聽打勾）
+    // C. 多選面板防漏氣與勾選變更
     if (customDropdownMenu) {
         customDropdownMenu.addEventListener('click', (e) => {
-            e.stopPropagation(); // 防止點擊選單內部時選單自己縮回去
+            e.stopPropagation(); 
         });
 
         customDropdownMenu.addEventListener('change', (e) => {
             if (e.target.type === 'checkbox') {
-                updateCustomButtonText();   // 更新自訂 (X) 數字
-                triggerCustomMultiFilter(); // 換牌重新拉資料
+                updateCustomButtonText();   
+                triggerCustomMultiFilter(); 
             }
         });
     }
 
-    // D. 🧹 「一鍵清空已選」按鈕核心邏輯
+    // D. 🧹 「一鍵清空已選」
     if (customClearBtn) {
         customClearBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -620,12 +616,12 @@ function setupEventListeners() {
             const checkboxes = customDropdownMenu.querySelectorAll('input[type="checkbox"]');
             checkboxes.forEach(box => box.checked = false);
 
-            updateCustomButtonText();   // 按鈕名字重設回「自訂」
-            triggerCustomMultiFilter(); // 立即同步發送空過濾
+            updateCustomButtonText();   
+            triggerCustomMultiFilter(); 
         });
     }
 
-    // E. 點擊網頁任何其他空白處，自動收起自訂多選彈窗
+    // E. 點擊網頁空白處，自動收起多選選單
     document.addEventListener('click', () => {
         if (customDropdownMenu && !customDropdownMenu.classList.contains('hidden')) {
             customDropdownMenu.classList.add('hidden');
@@ -642,13 +638,13 @@ function setupEventListeners() {
 
         localStorage.setItem("user_custom_tags_array", JSON.stringify(selectedValues));
 
-        // 🎯 特權規格：如果完全沒勾選，currentTag 帶空字串，Worker 不會命中任何固定類型
+        // 零選特權：如果沒勾選任何類型，currentTag 帶空字串
         currentTag = selectedValues.length === 0 ? "" : selectedValues.join(',');
         
         loadSummaryData(); 
     }
 
-    // F. 回到頂部控制邏輯
+    // F. 回到頂部控制
     const refreshToTopWithNewData = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         if (badge) badge.classList.add('hidden');
@@ -685,7 +681,7 @@ function setupEventListeners() {
         badge.addEventListener('click', () => { refreshToTopWithNewData(); });
     }
 
-    // G. 訊息細節與設定 Modal 監聽控制
+    // G. 彈窗與設定控制
     const modal = document.getElementById('article-modal');
     if (modal) {
         const modalClose = modal.querySelector('.modal-close');
@@ -740,7 +736,7 @@ function setupEventListeners() {
             e.stopPropagation();
             chatContainer.classList.toggle('hidden');
             if (!chatContainer.classList.contains('hidden')) {
-                if (chatBadge) chatBadge.classList.add('hidden'); // 清除未讀紅點
+                if (chatBadge) chatBadge.classList.add('hidden'); 
                 if (chatInput) chatInput.focus();
                 const chatBox = document.getElementById("chat-box");
                 if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
@@ -756,7 +752,7 @@ function setupEventListeners() {
 
     if (chatContainer) {
         chatContainer.addEventListener('click', (e) => {
-            e.stopPropagation(); // 防止點選聊天視窗內部的任何元件觸發背景事件
+            e.stopPropagation(); 
         });
     }
 
@@ -781,7 +777,7 @@ function setupEventListeners() {
     if (chatSendBtn) {
         chatSendBtn.addEventListener('click', handleCommitMessage);
     }
-} // 👈 🎯 完美將 setupEventListeners 關閉，防線建立完成！
+} // 👈 🎯 完美修復：這裡就是之前漏掉的閉合大括號，防線成功合攏！
 
 /* ==========================================================================
    9. 工具函式、UI 渲染與開機大印
@@ -841,9 +837,9 @@ window.addEventListener('popstate', (event) => {
 
 // ⚡ 唯一、純淨的中央開機引擎
 document.addEventListener("DOMContentLoaded", () => {
-    initCustomStorage();     // 1. 優先從本機硬碟記憶體同步自訂勾選位置
-    loadSummaryData();       // 2. 啟動對接新聞 Worker (內含極速預載骨骼盾牌)
-    setupEventListeners();   // 3. 統一發動全網頁事件監聽（包含聊天室按鈕與多選連動）
+    initCustomStorage();     // 1. 優先從本機記憶體同步自訂勾選狀態
+    loadSummaryData();       // 2. 啟動對接新聞 Worker (內含快取盾牌)
+    setupEventListeners();   // 3. 統一發動全網頁事件監聽（聊天按鈕解鎖正常！）
     simulateLiveUpdates();   // 4. 開啟背景即時重新整理
-    initChatEngine();        // 5. 🎯 網頁全部蓋好後，開通極速光纖，正式潛入即時聊天太空艙！
+    initChatEngine();        // 5. 🎯 火箭正式開通極速光纖通道！
 });

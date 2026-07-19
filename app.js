@@ -22,7 +22,7 @@ let itemsSinceAd = 24;
 let itemsSincePromo = 6;        
 
 // ==========================================================================
-// 2. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖自癒版)
+// 2. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖自癒診斷版)
 // ==========================================================================
 function renderCards(dataArray, append = false) {
     const container = document.getElementById("wall-container");
@@ -43,33 +43,50 @@ function renderCards(dataArray, append = false) {
         const isNew = item.isNewData ? "font-important" : "";
         const tagClass = item.isImportant ? "card-tag font-important" : `card-tag ${isNew}`;
 
-        // 🍌【預設相框分流】：有原圖用原圖，沒原圖先給一張輕量讀取占位圖（防止版面塌陷）
-        let initialImgSrc = item.image || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='9'></svg>";
+        // 🍌【預設相框分流】：有原圖用原圖，沒原圖先給基底預設圖
+        let initialImgSrc = item.image || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='9' viewBox='0 0 16 9'><rect width='100%' height='100%' fill='%23f1f3f4'/></svg>";
         
         const imgLoadAttr = !item.image ? `onload="this.parentElement.style.animation='none'"` : '';
         const imgContainerStyle = !item.image ? `style="background-color:#f1f3f4; position:relative; animation: badgePulse 2s infinite;"` : '';
 
-        // 💡 🌟【核心非同步生圖攔截】：如果新聞沒附圖，讓這張卡片在記憶體中靜悄悄發起 Fetch
+        // 💡 🌟【核心非同步生圖攔截】
         if (!item.image) {
-            // 🧙‍♂️ 精準咬死 item.title，並加上時間戳記防禦手機快取
             const imageUrl = `https://news-api.zhtttttt.workers.dev/?aiImageTitle=${encodeURIComponent(item.title)}&_cb=${Date.now()}`;
             
             fetch(imageUrl)
               .then(res => {
-                if (!res.ok) throw new Error("後端回傳爆了");
+                if (!res.ok) throw new Error(`HTTP 錯誤! 狀態碼: ${res.status}`);
                 return res.json();
               })
               .then(data => {
+                const localImg = cardElement.querySelector('.card-image');
                 if (data && data.imageUrl) {
-                  // 🎯 成功拿到圖片，精準填入屬於它自己的那張卡片裡
-                  const localImg = cardElement.querySelector('.card-image');
-                  if (localImg) localImg.src = data.imageUrl;
+                  // 🛡️ 核心防禦：手機端（iOS）極度排斥 http 圖片。如果是 http，強制在前端升級成 https
+                  let secureUrl = data.imageUrl.replace(/^http:/i, 'https:');
+                  if (localImg) {
+                    localImg.src = secureUrl;
+                    localImg.parentElement.style.animation = 'none';
+                  }
+                } else {
+                  // 🔍【診斷埋點 A】：後端有通，但裡面根本沒給 imageUrl（顯示極簡科技背景圖）
+                  console.warn("後端有回傳，但找不到 imageUrl 欄位:", data);
+                  if (localImg) {
+                    localImg.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80";
+                    localImg.parentElement.style.animation = 'none';
+                  }
                 }
               })
-              .catch(err => console.error("抓圖片翻車了:", err));
+              .catch(err => {
+                // 🔍【診斷埋點 B】：手機連線失敗、跨域被擋或 Worker 報錯
+                console.error("手機端戳圖片 API 徹底翻車:", err);
+                const localImg = cardElement.querySelector('.card-image');
+                if (localImg) {
+                  localImg.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80";
+                  localImg.parentElement.style.animation = 'none';
+                }
+              });
         }
 
-        // 🛠️ 這裡已經把 src 改回 ${initialImgSrc}，且 class 改回 ${tagClass}
         cardElement.innerHTML = `
             <button class="card-more-btn" title="更多選項">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -83,7 +100,6 @@ function renderCards(dataArray, append = false) {
                 <button class="menu-item btn-hide">不要顯示</button>
             </div>
 
-            <!-- 不論有沒有原圖都強制渲染相框，沒原圖就原地等待 AI 畫布由暗轉亮 -->
             <div class="card-image-container" ${imgContainerStyle}>
                 <img src="${initialImgSrc}" class="card-image" alt="news thumbnail" loading="lazy" ${imgLoadAttr}>
                 ${!item.image ? `<div style="position:absolute; bottom:6px; right:6px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.55rem; padding:2px 6px; border-radius:4px; pointer-events:none;">🍌 AI 畫布</div>` : ''}
@@ -115,7 +131,7 @@ function renderCards(dataArray, append = false) {
             </div>
         `;
 
-        // 💡 🌟【微距緊湊優化版】：點擊詳細視窗
+        // 💡 詳細視窗點擊
         cardElement.addEventListener("click", async () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;
@@ -131,7 +147,6 @@ function renderCards(dataArray, append = false) {
             document.getElementById('modal-source').textContent = item.source;
             document.getElementById('modal-time').textContent = item.time;
             
-            // 🎯【克隆自癒快取】：直接拿目前卡片上顯示的圖片網址
             const currentCardImgSrc = cardElement.querySelector('.card-image')?.src || initialImgSrc;
 
             let modalImageHtml = '';
@@ -175,7 +190,6 @@ function renderCards(dataArray, append = false) {
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
 
-                // 雙端防禦串流核心邏輯
                 try {
                     const fetchUrl = `https://news-api.zhtttttt.workers.dev/?aiTitle=${encodeURIComponent(item.title)}&aiSnippet=${encodeURIComponent(item.snippet)}`;
                     const response = await fetch(fetchUrl);

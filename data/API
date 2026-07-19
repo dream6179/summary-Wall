@@ -167,7 +167,7 @@ export default {
     }
 
     // ==========================================================================
-    // 📰 【常規路由】：核心變數重灌歸位，追加 Yahoo 即時焦點新聞
+    // 📰 【常規路由】：核心變數重灌歸位，收編 Google 新聞與 Yahoo 新聞
     // ==========================================================================
     const currentTag = searchParams.get('tag') || 'all';
     const browserHeader = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" };
@@ -175,16 +175,10 @@ export default {
     const sources = {
       "cna": { url: "https://feeds.feedburner.com/cnaFirstNews", name: "中央通訊社", tag: "焦點新聞" },
       "tech": { url: "https://technews.tw/feed/", name: "科技新報 TechNews", tag: "科技新知" },
- 
-      // 📰 🎯【強力援軍】：既然巴哈防得死死的，我們直接改上 Google 官方最強即時焦點頭條！
       "google": { url: "https://news.google.com/rss?hl=zh-TW&gl=TW&ceid=TW:zh-Hant", name: "Google 新聞", tag: "焦點新聞" },
-
       "stock": { url: "https://tw.stock.yahoo.com/rss?category=tw-market", name: "Yahoo 奇摩股市", tag: "財經新聞" },
-      
-      // 📰 🎯【全新大軍壓境】：一秒接通 Yahoo 官方即時焦點頭條！
       "yahoo": { url: "https://tw.news.yahoo.com/rss/headline", name: "Yahoo 奇摩新聞", tag: "焦點新聞" }
     };
-
 
     try {
       let finalItems = [];
@@ -207,10 +201,13 @@ export default {
           }
         }
       } else {
+        // 🎯 核心防禦：重新梳理單一分流，把不存在的 game 轉向到 google，防範 undefined 崩潰
         let selected = sources.cna;
-        if (currentTag === "遊戲情報" || currentTag === "game") { selected = sources.game; }
+        if (currentTag === "遊戲情報" || currentTag === "game") { selected = sources.google; }
         else if (currentTag === "科技新知" || currentTag === "tech") { selected = sources.tech; }
         else if (currentTag === "財經新聞" || currentTag === "stock") { selected = sources.stock; }
+        else if (currentTag === "google") { selected = sources.google; }
+        else if (currentTag === "yahoo") { selected = sources.yahoo; }
         
         const response = await fetch(selected.url, { headers: browserHeader });
         if (!response.ok) throw new Error(`${selected.name} 伺服器異常`);

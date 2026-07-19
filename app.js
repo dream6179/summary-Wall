@@ -22,7 +22,7 @@ let itemsSinceAd = 24;
 let itemsSincePromo = 6;        
 
 // ==========================================================================
-// 2. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖回歸初心版)
+// 2. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖進化)
 // ==========================================================================
 function renderCards(dataArray, append = false) {
     const container = document.getElementById("wall-container");
@@ -43,14 +43,11 @@ function renderCards(dataArray, append = false) {
         const isNew = item.isNewData ? "font-important" : "";
         const tagClass = item.isImportant ? "card-tag font-important" : `card-tag ${isNew}`;
 
-        // 💡 🌟【核心回歸】：直接在這裡把你的時間戳記焊死在網址後面！
-        // 這樣瀏覽器渲染 <img> 時，就會帶著這條網址直接去戳你的 Worker，同時徹底繞過手機的髒快取！
-        const cardImgUrl = item.image || `https://news-api.zhtttttt.workers.dev/?aiImageTitle=${encodeURIComponent(item.title)}&_cb=${Date.now()}`;
-
+        // 💡 🌟【瀑布流滿圖核心改裝】：如果新聞沒附圖，直接讓外部卡片也去戳後端的生圖路由！
+        const cardImgUrl = item.image ? item.image : `https://news-api.zhtttttt.workers.dev/?aiImageTitle=${encodeURIComponent(item.title)}`;
         const imgLoadAttr = !item.image ? `onload="this.parentElement.style.animation='none'"` : '';
         const imgContainerStyle = !item.image ? `style="background-color:#f1f3f4; position:relative; animation: badgePulse 2s infinite;"` : '';
 
-        // 🛠️ 乾乾淨淨，完全沒有任何多餘的非同步 fetch 阻礙！
         cardElement.innerHTML = `
             <button class="card-more-btn" title="更多選項">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -64,7 +61,7 @@ function renderCards(dataArray, append = false) {
                 <button class="menu-item btn-hide">不要顯示</button>
             </div>
 
-            <!-- 💡 讓 <img> 的 src 直接咬死心愛的 cardImgUrl 網址 -->
+            <!-- 💡 不論有沒有原圖都強制渲染相框，沒原圖就原地秀出 AI 畫布 -->
             <div class="card-image-container" ${imgContainerStyle}>
                 <img src="${cardImgUrl}" class="card-image" alt="news thumbnail" loading="lazy" ${imgLoadAttr}>
                 ${!item.image ? `<div style="position:absolute; bottom:6px; right:6px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.55rem; padding:2px 6px; border-radius:4px; pointer-events:none;">🍌 AI 畫布</div>` : ''}
@@ -96,11 +93,12 @@ function renderCards(dataArray, append = false) {
             </div>
         `;
 
-        // 💡 點擊詳細視窗（保持使用 cardImgUrl，確保彈出視窗與外部卡片共享同一個網址快取）
+        // 💡 🌟【微距緊湊優化版】：點擊詳細視窗 (秒開摘要 + 畫面強制置頂 + AI 智慧排版串流)
         cardElement.addEventListener("click", async () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;
             
+            // 🚀【置頂魔術】：每次一打開，強制所有滾動容器全部滾回最頂端！
             modal.scrollTop = 0; 
             const modalContent = modal.querySelector('.modal-content');
             if (modalContent) modalContent.scrollTop = 0;
@@ -112,12 +110,13 @@ function renderCards(dataArray, append = false) {
             document.getElementById('modal-source').textContent = item.source;
             document.getElementById('modal-time').textContent = item.time;
             
+            // 🍌 圖片相框：保持外部與內部網址完全一致，完美觸發瀏覽器快取
             let modalImageHtml = '';
             if (item.image) {
-                modalImageHtml = `<div class="modal-image-container" style="margin: 0 0 12px 0; border-radius: 8px; overflow: hidden; display: block;"><img src="${cardImgUrl}" class="modal-image" alt="modal img" style="width:100%; display:block; object-fit:cover;"></div>`;
+                modalImageHtml = `<div class="modal-image-container" style="margin: 0 0 12px 0; border-radius: 8px; overflow: hidden; display: block;"><img src="${item.image}" class="modal-image" alt="modal img" style="width:100%; display:block; object-fit:cover;"></div>`;
             } else {
                 modalImageHtml = `
-                    <div class="modal-image-container" style="background-color:#f1f3f4; position:relative; margin: 0 0 12px 0; border-radius:8px; overflow:hidden; aspect-ratio: 16/9;">
+                    <div class="modal-image-container" style="background-color:#f1f3f4; position:relative; animation: badgePulse 2s infinite; margin: 0 0 12px 0; border-radius:8px; overflow:hidden; aspect-ratio: 16/9;">
                         <img src="${cardImgUrl}" class="modal-image" alt="Banana Gen Art" style="width:100%; height:100%; object-fit:cover; display:block;" onload="this.parentElement.style.animation='none'">
                         <div style="position:absolute; bottom:6px; right:6px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.55rem; padding:2px 6px; border-radius:4px; pointer-events:none;">🍌 奈米香蕉 AI 畫布</div>
                     </div>
@@ -131,48 +130,63 @@ function renderCards(dataArray, append = false) {
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
             } else {
+                // 📰 正常新聞版面
                 document.getElementById('modal-snippet').innerHTML = `
                     ${modalImageHtml}
+                    
                     <p style="font-size: 1rem; line-height: 1.6; color: var(--text-main); margin: 0 0 14px 0; padding: 0; white-space: pre-wrap;">
                         ${escapeHtml(item.snippet)}
                     </p>
+                    
                     <div id="modal-ai-panel" style="background-color: #f4f8ff; border: 1px solid #e1eefd; border-left: 4px solid var(--accent-color); padding: 12px 14px; border-radius: 10px; margin: 0 0 12px 0; white-space: normal;">
                         <h4 style="color: var(--accent-color); margin: 0 0 6px 0; padding: 0; font-size: 0.95rem; display: flex; align-items: center; gap: 6px; font-weight: 600;">
                             <span style="font-size:1.1rem;">🧠</span> Gemini 核心即時趨勢剖析
                         </h4>
+                        
                         <div id="ai-response-box" style="font-size: 0.92rem; color: #3c4043; line-height: 1.55; margin: 0; padding: 0;">
                             <span style="display:inline-block; animation: badgePulse 1.6s infinite; margin-right: 6px;">⚡</span> AI正在線上進行數據剖析與衍生解讀...
                         </div>
+                        
                         <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; border-top: 1px dashed #dadce0; padding-top: 8px; line-height: 1.4;">
                             ⚠️ <strong>模組提示：</strong>本區塊由 AI 自動產出，注意潛在幻覺風險，請以官方公告為準。
                         </div>
                     </div>
+                    
                     ${modalLinkHtml}
                 `;
                 
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
 
-                // 雙端防禦串流核心邏輯
+                // 🚀 ✅ 雙端防禦串流核心邏輯
                 try {
                     const fetchUrl = `https://news-api.zhtttttt.workers.dev/?aiTitle=${encodeURIComponent(item.title)}&aiSnippet=${encodeURIComponent(item.snippet)}`;
                     const response = await fetch(fetchUrl);
+                    
                     const aiBox = document.getElementById('ai-response-box');
                     
+                    // 🧙‍♂️ 賽博通用渲染組裝濾網（已加裝全自動思維漂白攔截器）
                     const renderAiOutput = (text) => {
                         if (!aiBox || !text) return;
+                        
                         let normalizedText = text;
 
+                        // 🚨 💥【終極物理防線】：若發現 Gemma 頑固夾帶英文思考草稿，當場把第一個中文標題前的垃圾切碎
                         if (/[A-Za-z\s]+:/.test(normalizedText) && /[\u4e00-\u9fa5]/.test(normalizedText)) {
                             const firstChineseChar = normalizedText.search(/[\u4e00-\u9fa5]/);
                             if (firstChineseChar !== -1) {
                                 const prefixText = normalizedText.substring(0, firstChineseChar);
                                 const titleStart = prefixText.lastIndexOf('**');
+                                // 完美保留標題的粗體引導星號，把前面的英文草稿瞬間人間蒸發
                                 normalizedText = titleStart !== -1 ? normalizedText.substring(titleStart) : normalizedText.substring(firstChineseChar);
                             }
                         }
                         
-                        normalizedText = normalizedText.replace(/\\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+                        // 🎯 核心自癒：清洗換行殘渣
+                        normalizedText = normalizedText
+                            .replace(/\\n/g, '\n')
+                            .replace(/\n{3,}/g, '\n\n');
+                        
                         const paragraphs = normalizedText.split('\n\n');
                         const finalHtml = paragraphs.map(p => {
                             if (!p.trim()) return '';
@@ -183,11 +197,14 @@ function renderCards(dataArray, append = false) {
                     };
 
                     let accumulatedText = ""; 
-                    let rawBuffer = ""; 
+                    let rawBuffer = "";        
                     
+                    // 🚨 💥【防線 A：iPhone WebView / 舊版瀏覽器閹割環境攔截】
                     if (!response.body || typeof response.body.getReader !== 'function') {
+                        console.log("進入 iPhone / 限制型 WebView 環境，啟動全量安全載入通道...");
                         const fullText = await response.text();
-                        rawBuffer = fullText;
+                        rawBuffer = fullText; // 留底供自癒診斷使用
+                        
                         const fallbackRegex = /"text":\s*"((?:[^"\\]|\\.)*)"/g;
                         let fallbackMatch;
                         while ((fallbackMatch = fallbackRegex.exec(fullText)) !== null) {
@@ -195,8 +212,12 @@ function renderCards(dataArray, append = false) {
                             try { accumulatedText += JSON.parse(`"${extracted}"`); } 
                             catch (e) { accumulatedText += extracted.replace(/\\n/g, '\n').replace(/\\"/g, '"'); }
                         }
-                        if (accumulatedText) renderAiOutput(accumulatedText);
+                        
+                        if (accumulatedText) {
+                            renderAiOutput(accumulatedText);
+                        }
                     } else {
+                        // 🔄 💥【防線 B：常規 PC / 高速打字機串流讀取軌道】
                         const reader = response.body.getReader();
                         const decoder = new TextDecoder();
                         if (aiBox) aiBox.innerHTML = ""; 
@@ -204,36 +225,58 @@ function renderCards(dataArray, append = false) {
                         while (true) {
                             const { done, value } = await reader.read();
                             if (done) break; 
+                            
                             rawBuffer += decoder.decode(value, { stream: true });
                             
                             const regex = /"text":\s*"((?:[^"\\]|\\.)*)"/g;
                             let match;
                             let lastIndex = 0;
+                            
                             while ((match = regex.exec(rawBuffer)) !== null) {
                                 let extractedTarget = match[1];
-                                try { accumulatedText += JSON.parse(`"${extractedTarget}"`); } 
-                                catch (e) { accumulatedText += extractedTarget.replace(/\\n/g, '\n').replace(/\\"/g, '"'); }
+                                try {
+                                    accumulatedText += JSON.parse(`"${extractedTarget}"`);
+                                } catch (e) {
+                                    accumulatedText += extractedTarget.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+                                }
                                 lastIndex = regex.lastIndex;
                             }
-                            if (lastIndex > 0) rawBuffer = rawBuffer.slice(lastIndex);
-                            if (accumulatedText) renderAiOutput(accumulatedText); 
+                            
+                            if (lastIndex > 0) {
+                                rawBuffer = rawBuffer.slice(lastIndex);
+                            }
+                            
+                            if (accumulatedText) {
+                                renderAiOutput(accumulatedText); 
+                            }
                         }
                     }
 
+                    // 🚀 💥【終極神級邏輯：串流自癒診斷器】
+                    // 萬一跑完了但是 accumulatedText 卻是空的，代表 API 吐回了「非 JSON 的純文字錯誤訊息」
                     if (!accumulatedText && aiBox) {
                         const cleanBuffer = rawBuffer.trim();
+                        // 1. 如果回傳的內容不包含 JSON 結構字元，說明這百分之百是 Worker catch 拋出來的錯誤本體
                         if (cleanBuffer && !cleanBuffer.startsWith('{') && !cleanBuffer.startsWith('[')) {
                             aiBox.innerHTML = `<div style="color:#ea4335; font-weight:600; padding:4px 0; line-height:1.5;">⚠️ 遠端 Worker 拒絕連線：<br><span style="color:#3c4043; font-weight:400;">${escapeHtml(cleanBuffer)}</span></div>`;
-                        } else if (cleanBuffer && cleanBuffer.includes('"message"')) {
+                        } 
+                        // 2. 如果包含了 Google 的標準 JSON 錯誤訊息，直接把內部的 message 欄位挖出來顯示
+                        else if (cleanBuffer && cleanBuffer.includes('"message"')) {
                             const msgMatch = cleanBuffer.match(/"message"\s*:\s*"([^"]+)"/);
-                            aiBox.innerHTML = `<div style="color:#ea4335; font-weight:600; padding:4px 0;">⚠️ Google API 報錯：<br><span style="color:#3c4043; font-weight:400;">${escapeHtml(msgMatch ? msgMatch[1] : "Google 核心拒絕回應")}</span></div>`;
-                        } else {
-                            aiBox.innerHTML = `<div style="color:#ea4335; font-weight:600; padding:4px 0;">⚠️ AI 戰術報告未預期中斷。</div>`;
+                            const errMsg = msgMatch ? msgMatch[1] : "Google 核心拒絕回應";
+                            aiBox.innerHTML = `<div style="color:#ea4335; font-weight:600; padding:4px 0;">⚠️ Google API 報錯：<br><span style="color:#3c4043; font-weight:400;">${escapeHtml(errMsg)}</span></div>`;
+                        } 
+                        // 3. 通用兜底
+                        else {
+                            aiBox.innerHTML = `<div style="color:#ea4335; font-weight:600; padding:4px 0;">⚠️ AI 戰術報告未預期中斷（可能原因：Gemini 3.5模型失效、密鑰過期或內容觸發敏感審查）。</div>`;
                         }
                     }
+
                 } catch (error) {
                     const aiBox = document.getElementById('ai-response-box');
-                    if (aiBox) aiBox.innerHTML = `<p>AI 智囊團目前連線外洩 or 逾時，請點擊下方閱讀原文按鈕查看完整內容。</p>`;
+                    if (aiBox) {
+                        aiBox.innerHTML = `<p>AI 智囊團目前連線外洩或逾時，請點擊下方閱讀原文按鈕查看完整內容。</p>`;
+                    }
                 }
             }
         });
@@ -263,11 +306,13 @@ function renderCards(dataArray, append = false) {
 
         likeBtn.addEventListener("click", (e) => { e.stopPropagation(); likeBtn.classList.toggle('liked'); });
         shareBtn.addEventListener("click", (e) => { e.stopPropagation(); alert(`準備分享文章：${item.title}`); });
-        
         container.appendChild(cardElement);
     });
 }
 
+document.addEventListener("click", () => {
+    document.querySelectorAll('.more-menu').forEach(m => m.classList.add('hidden'));
+});
 
 // ==========================================================================
 // 3. 無限滾動邏輯

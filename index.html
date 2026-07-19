@@ -58,57 +58,66 @@
   <button class="tab-btn" data-tag="google">焦點新聞</button>
   <button class="tab-btn" data-tag="tech">科技新知</button>
   
-  <!-- 🎯 自訂特區：按鈕結合選單 -->
+  <!-- 🎯 自訂特區：按鈕結合多選彈出面板 -->
   <div class="custom-tab-wrapper">
-    <button class="tab-btn" id="custom-tab-btn" data-tag="custom">自訂情報</button>
-    <select id="custom-source-select" class="custom-select">
-      <!-- 遊戲與社群 -->
-      <optgroup label="🎮 遊戲與社群">
-        <option value="steam">Steam 遊戲</option>
-        <option value="hoyolab">HoYoLAB</option>
-        <option value="anime">動漫快訊</option>
-        <option value="youtuber">YouTuber 圈</option>
-        <option value="influencer">網網紅名人</option>
-        <option value="threads">Threads 趨勢</option>
-        <option value="ig">Instagram</option>
-        <option value="line">LINE 科技</option>
-      </optgroup>
-      <!-- 科技與電信 -->
-      <optgroup label="📱 科技與電信">
-        <option value="fet">遠傳電信</option>
-        <option value="cht">中華電信</option>
-        <option value="twm">台灣大哥大</option>
-        <option value="samsung">Samsung</option>
-        <option value="apple">Apple</option>
-        <option value="ai">AI 浪潮</option>
-        <option value="openai">OpenAI</option>
-        <option value="google_alert">Google 核心</option>
-        <option value="tech_3c">3C情報</option>
-        <option value="mobile">手機通訊</option>
-      </optgroup>
-      <!-- 生活與重大突發 -->
-      <optgroup label="🚨 生活與突發">
-        <option value="quake">地震速報</option>
-        <option value="typhoon">颱風動態</option>
-        <option value="anti_fraud">165 防詐</option>
-        <option value="transit">大眾運輸</option>
-        <option value="accident">即時車禍</option>
-        <option value="food_safety">食安追蹤</option>
-        <option value="discount">好康優惠</option>
-        <option value="travel">旅遊生活</option>
-        <option value="movie">電影影集</option>
-        <option value="netflix">Netflix</option>
-      </optgroup>
-      <!-- 國際與財經 -->
-      <optgroup label="🌐 全球與財經">
-        <option value="world">世界大局</option>
-        <option value="oil">石油能源</option>
-        <option value="us">美國焦點</option>
-        <option value="jp">日本情報</option>
-        <option value="kr">韓國動態</option>
-        <option value="cn">中國觀察</option>
-      </optgroup>
-    </select>
+    <!-- 預設按鈕調整成「自訂」兩個字 -->
+    <button class="tab-btn" id="custom-tab-btn" data-tag="custom">自訂</button>
+    
+    <!-- 👁️ 新型多選彈出勾選盒面板 -->
+    <div id="custom-dropdown-menu" class="custom-dropdown-menu hidden">
+      <div class="dropdown-header">
+        <button id="custom-clear-btn" class="dropdown-clear-btn">🧹 清空已選</button>
+      </div>
+      <div class="dropdown-body">
+        
+        <!-- 🎮 遊戲與社群 -->
+        <div class="dropdown-group-title">🎮 遊戲與社群</div>
+        <label class="dropdown-item-label"><input type="checkbox" value="steam"> Steam 遊戲</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="hoyolab"> HoYoLAB</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="anime"> 動漫快訊</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="youtuber"> YouTuber 圈</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="influencer"> 網紅名人</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="threads"> Threads 趨勢</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="ig"> Instagram</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="line"> LINE 科技</label>
+
+        <!-- 📱 科技與電信 -->
+        <div class="dropdown-group-title">📱 科技與電信</div>
+        <label class="dropdown-item-label"><input type="checkbox" value="fet"> 遠傳電信</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="cht"> 中華電信</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="twm"> 台灣大哥大</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="samsung"> Samsung</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="apple"> Apple</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="ai"> AI 浪潮</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="openai"> OpenAI</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="google_alert"> Google 核心</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="tech_3c"> 3C情報</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="mobile"> 手機通訊</label>
+
+        <!-- 🚨 生活與重大突發 -->
+        <div class="dropdown-group-title">🚨 生活與突發</div>
+        <label class="dropdown-item-label"><input type="checkbox" value="quake"> 地震速報</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="typhoon"> 颱風動態</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="anti_fraud"> 165 防詐</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="transit"> 大眾運輸</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="accident"> 即時車禍</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="food_safety"> 食安追蹤</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="discount"> 好康優惠</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="travel"> 旅遊生活</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="movie"> 電影影集</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="netflix"> Netflix</label>
+
+        <!-- 🌐 國際與財經 -->
+        <div class="dropdown-group-title">🌐 全球與財經</div>
+        <label class="dropdown-item-label"><input type="checkbox" value="world"> 世界大局</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="oil"> 石油能源</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="us"> 美國焦點</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="jp"> 日本情報</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="kr"> 韓國動態</label>
+        <label class="dropdown-item-label"><input type="checkbox" value="cn"> 中国观察</label>
+
+      </div>
+    </div>
   </div>
 </div>
 
@@ -177,6 +186,40 @@
             </div>
         </div>
     </div>
+
+    <!-- 💬 左下角圓圈聊天按鈕 -->
+<button id="chat-toggle-btn" title="開啟賽博聊天室">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+    </svg>
+    <!-- 在線人數微型提示燈 -->
+    <span id="chat-badge" class="hidden"></span>
+</button>
+
+<!-- 🚀 彈出式聊天太空艙 -->
+<div id="chat-container" class="hidden">
+    <!-- 頂部狀態列 -->
+    <div class="chat-header">
+        <div class="header-left">
+            <span class="pulse-dot"></span>
+            <span id="chat-status">📡 正在聯線太空艙...</span>
+        </div>
+        <button id="chat-close-x" title="收起">&times;</button>
+    </div>
+    
+    <!-- 歷史訊息滾動特區 -->
+    <div id="chat-box"></div>
+    
+    <!-- 底部輸入欄 -->
+    <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="傳送情報..." autocomplete="off">
+        <button id="chat-send-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+            </svg>
+        </button>
+    </div>
+</div>
 
     <script src="app.js"></script>
 </body>

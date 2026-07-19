@@ -23,8 +23,9 @@ export default {
         }
 
         // 🚀 現場高流速作畫，直接拉取 Cloudflare 內建免費 Stable Diffusion 的原始圖片流
+                // 🚀 調整提示詞，去掉賽博龐克，換成萬用現代網頁封面風格
         const response = await env.AI.run('@cf/stabilityai/stable-diffusion-xl-base-1.0', {
-          prompt: `Cyberpunk digital art style, high technology concept vector illustration, professional web cover design about: ${aiImageTitle}`,
+          prompt: `Modern clean professional web cover illustration, graphic design, minimalist flat style about: ${aiImageTitle}`,
           num_steps: 20
         });
 

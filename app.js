@@ -21,8 +21,10 @@ let itemsSinceTest = 0;
 let itemsSinceAd = 24;          
 let itemsSincePromo = 6;        
 
+const API_BASE_URL = "https://news-api.zhtttttt.workers.dev";
+
 // ==========================================================================
-// 2. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖進化 - 🔙 完好回退版)
+// 2. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖進化)
 // ==========================================================================
 function renderCards(dataArray, append = false) {
     const container = document.getElementById("wall-container");
@@ -43,8 +45,7 @@ function renderCards(dataArray, append = false) {
         const isNew = item.isNewData ? "font-important" : "";
         const tagClass = item.isImportant ? "card-tag font-important" : `card-tag ${isNew}`;
 
-        // 💡 回歸你最初的完美一行文，不留任何多餘的 fetch 阻礙
-        const cardImgUrl = item.image ? item.image : `https://news-api.zhtttttt.workers.dev/?aiImageTitle=${encodeURIComponent(item.title)}`;
+        const cardImgUrl = item.image ? item.image : `${API_BASE_URL}/?aiImageTitle=${encodeURIComponent(item.title)}`;
         const imgLoadAttr = !item.image ? `onload="this.parentElement.style.animation='none'"` : '';
         const imgContainerStyle = !item.image ? `style="background-color:#f1f3f4; position:relative; animation: badgePulse 2s infinite;"` : '';
 
@@ -136,7 +137,7 @@ function renderCards(dataArray, append = false) {
                             <span style="font-size:1.1rem;">🧠</span> Gemini 核心即時趨勢剖析
                         </h4>
                         <div id="ai-response-box" style="font-size: 0.92rem; color: #3c4043; line-height: 1.55; margin: 0; padding: 0;">
-                            <span style="display:inline-block; animation: badgePulse 1.6s infinite; margin-right: 6px;">⚡</span> AI正在線上進行數據剖析與衍生解讀...
+                            <span style="display:inline-block; animation: badgePulse 1.6s infinite; margin-right: 6px;">⚡</span> AI正在線上進行數據剖析與衍生解解读...
                         </div>
                         <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; border-top: 1px dashed #dadce0; padding-top: 8px; line-height: 1.4;">
                             ⚠️ <strong>模組提示：</strong>本區塊由 AI 自動產出，注意潛在幻覺風險，請以官方公告為準。
@@ -149,7 +150,7 @@ function renderCards(dataArray, append = false) {
                 history.pushState({ modalOpen: true }, '');
 
                 try {
-                    const fetchUrl = `https://news-api.zhtttttt.workers.dev/?aiTitle=${encodeURIComponent(item.title)}&aiSnippet=${encodeURIComponent(item.snippet)}`;
+                    const fetchUrl = `${API_BASE_URL}/?aiTitle=${encodeURIComponent(item.title)}&aiSnippet=${encodeURIComponent(item.snippet)}`;
                     const response = await fetch(fetchUrl);
                     const aiBox = document.getElementById('ai-response-box');
                     
@@ -261,9 +262,23 @@ function renderCards(dataArray, append = false) {
     });
 }
 
+// ==========================================================================
+// 3. 智慧本地快取與自訂選單記憶初始化
+// ==========================================================================
+function initCustomStorage() {
+    const selectEl = document.getElementById("custom-source-select");
+    if (!selectEl) return;
+    
+    let savedCustomTag = localStorage.getItem("user_custom_tag");
+    if (!savedCustomTag) {
+        savedCustomTag = "steam";
+        localStorage.setItem("user_custom_tag", savedCustomTag);
+    }
+    selectEl.value = savedCustomTag;
+}
 
 // ==========================================================================
-// 3. 無限滾動邏輯
+// 4. 無限滾動邏輯
 // ==========================================================================
 function loadMore() {
     if (currentFilteredData.length === 0 && testTemplates.length === 0 && promoTemplates.length === 0 && adTemplates.length === 0) return;
@@ -309,11 +324,10 @@ function setupInfiniteScroll() {
 }
 
 // ==========================================================================
-// 4. 資料過濾核心
+// 5. 資料過濾與中央調度
 // ==========================================================================
 function filterAndRenderData() {
     let filtered = allSummaries;
-    if (currentTag !== 'all') { filtered = filtered.filter(item => item.tag === currentTag); }
     if (searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase();
         filtered = filtered.filter(item => 
@@ -336,14 +350,54 @@ function filterAndRenderData() {
     }
 }
 
+// 📡 中央調度入口：負責向後端完全體 Worker 發送請求並初始化指針
+async function loadSummaryData() {
+    const container = document.getElementById("wall-container");
+    if (container && allSummaries.length === 0) {
+        container.innerHTML = `<div class="loading-text">📡 正在連線核心情報庫...</div>`;
+    }
+
+    const fetchUrl = `${API_BASE_URL}/?tag=${encodeURIComponent(currentTag)}`;
+
+    try {
+        const response = await fetch(fetchUrl);
+        if (!response.ok) throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`);
+        allSummaries = await response.json();
+        
+        try {
+            const [testRes, promoRes, adRes] = await Promise.all([
+                fetch('./data/summaries.json').then(r => r.json()).catch(() => []),
+                fetch('./data/promo.json').then(r => r.json()).catch(() => []),
+                fetch('./data/ads.json').then(r => r.json()).catch(() => [])
+            ]);
+            testTemplates = testRes; promoTemplates = promoRes; adTemplates = adRes;
+        } catch (localError) { console.log("本地特殊卡片預載失敗"); }
+
+        filterAndRenderData();
+        if (!observer) setupInfiniteScroll();
+        
+    } catch (error) {
+        console.error("真實新聞連線失敗，啟動本地快取備援", error);
+        try {
+            const fallback = await fetch('./data/summaries.json');
+            allSummaries = await fallback.json();
+            testTemplates = allSummaries; 
+            filterAndRenderData(); 
+            if (!observer) setupInfiniteScroll();
+        } catch (e) {
+            if (container) container.innerHTML = `<div class="loading-text" style="color: #ea4335;">系統完全中斷，請檢查網路連線。</div>`;
+        }
+    }
+}
+
 // ==========================================================================
-// 5. 【真實對接更新】：每小時在背景連線一次 Worker 抓取真新聞
+// 6. 每小時在背景連線一次 Worker 抓取真新聞
 // ==========================================================================
 function simulateLiveUpdates() {
     setInterval(async () => {
         if (allSummaries.length === 0) return;
         
-        const fetchUrl = `https://news-api.zhtttttt.workers.dev/?tag=${encodeURIComponent(currentTag)}`;
+        const fetchUrl = `${API_BASE_URL}/?tag=${encodeURIComponent(currentTag)}`;
         try {
             const response = await fetch(fetchUrl);
             if (!response.ok) return;
@@ -377,12 +431,14 @@ function simulateLiveUpdates() {
 }
 
 // ==========================================================================
-// 6. 事件監聽設定
+// 7. 事件監聽設定（整合自訂頁籤與記憶體聯動）
 // ==========================================================================
 function setupEventListeners() {
     const searchInput = document.getElementById('search-input');
     const clearSearchBtn = document.getElementById('clear-search');
     const tabsContainer = document.getElementById('filter-tabs-container');
+    const selectEl = document.getElementById("custom-source-select");
+    const customTabBtn = document.getElementById("custom-tab-btn");
     const bttBtn = document.getElementById('back-to-top');
     const badge = document.getElementById('new-data-badge');
 
@@ -401,16 +457,41 @@ function setupEventListeners() {
         });
     }
 
+    // 🎯 1. 導覽頁籤中央處理：完美融合固定頁籤與自訂頁籤
     if (tabsContainer) {
         tabsContainer.addEventListener('click', (e) => {
-            const clickedTab = e.target.closest('.tab'); if (!clickedTab) return;
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            const clickedTab = e.target.closest('.tab, .tab-btn'); 
+            if (!clickedTab) return;
+            
+            let tag = clickedTab.dataset.tag;
+            
+            // 如果點到的是自訂按鈕本體，則即時讀取下拉選單目前的數值
+            if (tag === "custom" && selectEl) {
+                tag = selectEl.value;
+            }
+
+            document.querySelectorAll('.tab, .tab-btn').forEach(tab => tab.classList.remove('active'));
             clickedTab.classList.add('active');
-            currentTag = clickedTab.dataset.tag; loadSummaryData(); 
+            
+            currentTag = tag; 
+            loadSummaryData(); 
         });
     }
 
-    // 💡 🌟【終極返回頂部刷新核心】：點擊火箭或氣泡，原地重灌最新實體資訊
+    // 🎯 2. 下拉選單即時變更：強制高亮自訂標籤、記憶硬碟、立即換牌
+    if (selectEl) {
+        selectEl.addEventListener('change', (e) => {
+            const newSelectedTag = e.target.value;
+            localStorage.setItem("user_custom_tag", newSelectedTag);
+            
+            document.querySelectorAll('.tab, .tab-btn').forEach(btn => btn.classList.remove('active'));
+            if (customTabBtn) customTabBtn.classList.add('active');
+
+            currentTag = newSelectedTag;
+            loadSummaryData();
+        });
+    }
+
     const refreshToTopWithNewData = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         if (badge) badge.classList.add('hidden');
@@ -422,7 +503,6 @@ function setupEventListeners() {
         unseenNewItems = []; 
         newsPointer = 0;     
         renderedCount = 0;   
-        
         itemsSinceTest = 0; 
         itemsSinceAd = 24; 
         itemsSincePromo = 6;
@@ -445,9 +525,7 @@ function setupEventListeners() {
     }
 
     if (badge) {
-        badge.addEventListener('click', () => {
-            refreshToTopWithNewData();
-        });
+        badge.addEventListener('click', () => { refreshToTopWithNewData(); });
     }
 
     const modal = document.getElementById('article-modal');
@@ -491,52 +569,10 @@ function setupEventListeners() {
 } 
 
 // ==========================================================================
-// 7. 工具函式與資料載入入口
+// 8. 工具函式與統一開機入口
 // ==========================================================================
 function escapeHtml(string) {
     return String(string).replace(/[&<>"']/g, s => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));
-}
-
-async function loadSummaryData() {
-    const container = document.getElementById("wall-container");
-    const fetchUrl = `https://news-api.zhtttttt.workers.dev/?tag=${encodeURIComponent(currentTag)}`;
-
-    try {
-        const response = await fetch(fetchUrl);
-        if (!response.ok) throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`);
-        allSummaries = await response.json();
-        
-        try {
-            const [testRes, promoRes, adRes] = await Promise.all([
-                fetch('./data/summaries.json').then(r => r.json()).catch(() => []),
-                fetch('./data/promo.json').then(r => r.json()).catch(() => []),
-                fetch('./data/ads.json').then(r => r.json()).catch(() => [])
-            ]);
-            testTemplates = testRes; promoTemplates = promoRes; adTemplates = adRes;
-        } catch (localError) { console.log("本地特殊卡片預載失敗"); }
-
-        currentFilteredData = allSummaries;
-        renderedCount = 0; unseenNewItems = []; newsPointer = 0;
-        itemsSinceTest = 0; itemsSinceAd = 24; itemsSincePromo = 6;
-        
-        if (container) container.innerHTML = ""; 
-        const sentinel = document.getElementById('sentinel');
-        if (sentinel) sentinel.classList.remove('hidden');
-        
-        loadMore(); 
-        if (!observer) setupInfiniteScroll();
-        
-    } catch (error) {
-        console.error("真實新聞連線失敗，啟動本地快取備援", error);
-        try {
-            const fallback = await fetch('./data/summaries.json');
-            allSummaries = await fallback.json();
-            testTemplates = allSummaries; filterAndRenderData(); 
-            if (!observer) setupInfiniteScroll();
-        } catch (e) {
-            if (container) container.innerHTML = `<div class="loading-text" style="color: #ea4335;">系統完全中斷，請檢查網路連線。</div>`;
-        }
-    }
 }
 
 window.addEventListener('popstate', (event) => {
@@ -546,8 +582,10 @@ window.addEventListener('popstate', (event) => {
     if (settingsModal && !settingsModal.classList.contains('hidden')) { settingsModal.classList.add('hidden'); }
 });
 
+// ⚡ 唯一、純淨的中央開機引擎
 document.addEventListener("DOMContentLoaded", () => {
-    loadSummaryData();
-    setupEventListeners();
-    simulateLiveUpdates(); 
+    initCustomStorage();     // 1. 優先從本機硬碟同步自訂選單位置
+    loadSummaryData();       // 2. 啟動對接後端 Worker
+    setupEventListeners();   // 3. 綁定全網頁事件監聽（含選單切換）
+    simulateLiveUpdates();   // 4. 開啟背景即時重新整理
 });

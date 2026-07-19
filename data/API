@@ -13,25 +13,68 @@ export default {
     const { searchParams } = new URL(request.url);
     
     // ==========================================================================
-    // 🎨【AI 封面生圖核心 - 🔙 徹底回退原始版本，不留任何 KV 程式碼】
+    // 🎨【AI 封面生圖核心 + 🛡️ 全球 KV 快取防禦盾牌完全體】
     // ==========================================================================
     const aiImageTitle = searchParams.get('aiImageTitle'); 
     if (aiImageTitle) {
       try {
-        // 🚀 這裡一字不漏地放回你最開始、完好能動的繪圖模型 fetch 邏輯
-        const imageResponse = await fetch("你的繪圖模型API網址", {
+        const imageCacheKey = "ai_cover:" + encodeURIComponent(aiImageTitle).substring(0, 150);
+        
+        if (env.NEWS_CACHE_KV) {
+          const cachedImagePayload = await env.NEWS_CACHE_KV.get(imageCacheKey);
+          if (cachedImagePayload) {
+            console.log("🎯 完美命中邊緣 KV 快取！0秒秒回 AI 封面");
+            return new Response(cachedImagePayload, {
+              headers: { 
+                "Content-Type": "application/json", 
+                ...corsHeaders 
+              }
+            });
+          }
+        }
+
+        // ==========================================================================
+        // 🚀【你的核心生圖區塊】：真正驚動 Google 奈米香蕉 2 大腦！
+        // ==========================================================================
+        if (!env.GEMINI_API_KEY) {
+          throw new Error("系統提示：缺少 GEMINI_API_KEY 環境變數。");
+        }
+
+        // 🍌 直接呼叫 Nano Banana 2 官方生圖閘門
+        const bananaApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/nano-banana-2:generateImages?key=${env.GEMINI_API_KEY}`;
+        
+        const imageResponse = await fetch(bananaApiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: `幫我畫一張關於 ${aiImageTitle} 的科技感高畫質封面` })
+          body: JSON.stringify({
+            prompt: `Professional digital art, cyberpunk technology style illustration about: ${aiImageTitle}`,
+            numberOfImages: 1,
+            aspectRatio: "16:9"
+          })
         });
+
+        if (!imageResponse.ok) {
+          throw new Error(`奈米香蕉生圖引擎回應異常: ${imageResponse.status}`);
+        }
+
         const imageJson = await imageResponse.json();
         
-        // 🚀 這裡放回你最原始、能讓卡片正常出圖的 finalImagePayload 處理方式
-        // （不管是直接吐二進位圖、重導向，還是原本能動的格式）
+        // 🍌 提取 Google 規格的二進位 Base64 數據，封裝成前端網頁秒懂的 Data URL
+        const base64Bytes = imageJson.generatedImages[0].image.imageBytes;
+        const realUrl = `data:image/jpeg;base64,${base64Bytes}`;
+        
+        // 打包成你的原始 Payload 變數，完美跟下方的 KV 與 Response 銜接！
+        const finalImagePayload = JSON.stringify({ imageUrl: realUrl });
+        // ==========================================================================
+
+        if (env.NEWS_CACHE_KV && finalImagePayload) {
+          ctx.waitUntil(env.NEWS_CACHE_KV.put(imageCacheKey, finalImagePayload, { expirationTtl: 2592000 }));
+          console.log("💾 AI 封面成功打包存入邊緣 KV 快取，下回免燒點數！");
+        }
 
         return new Response(finalImagePayload, {
           headers: { 
-            "Content-Type": "你原本能動的格式", 
+            "Content-Type": "application/json", 
             ...corsHeaders 
           }
         });

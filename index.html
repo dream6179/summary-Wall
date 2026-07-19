@@ -52,19 +52,66 @@
             </div>
         </nav>
 
-        <!-- 主題篩選分頁標籤列 -->
-        <div class="filter-tabs-wrapper">
-            <div class="filter-tabs" id="filter-tabs-container">
-                <button class="tab active" data-tag="all">全部摘要</button>
-                <button class="tab" data-tag="科技新知">科技新知</button>
-                <button class="tab" data-tag="財經新聞">財經新聞</button>
-                <button class="tab" data-tag="遊戲情報">遊戲情報</button>
-                <button class="tab" data-tag="社群熱議">社群熱議</button>
-                <button class="tab" data-tag="生活風格">生活風格</button>
-                <button class="tab" data-tag="開發日誌">開發日誌</button>
-                <button class="tab" data-tag="世界之外">世界之外</button>
-            </div>
-        </div>
+<!-- 導覽頁籤區 -->
+<div class="tab-container">
+  <button class="tab-btn active" data-tag="all">全部摘要</button>
+  <button class="tab-btn" data-tag="google">焦點新聞</button>
+  <button class="tab-btn" data-tag="tech">科技新知</button>
+  
+  <!-- 🎯 自訂特區：按鈕結合選單 -->
+  <div class="custom-tab-wrapper">
+    <button class="tab-btn" id="custom-tab-btn" data-tag="custom">自訂情報</button>
+    <select id="custom-source-select" class="custom-select">
+      <!-- 遊戲與社群 -->
+      <optgroup label="🎮 遊戲與社群">
+        <option value="steam">Steam 遊戲</option>
+        <option value="hoyolab">HoYoLAB</option>
+        <option value="anime">動漫快訊</option>
+        <option value="youtuber">YouTuber 圈</option>
+        <option value="influencer">網網紅名人</option>
+        <option value="threads">Threads 趨勢</option>
+        <option value="ig">Instagram</option>
+        <option value="line">LINE 科技</option>
+      </optgroup>
+      <!-- 科技與電信 -->
+      <optgroup label="📱 科技與電信">
+        <option value="fet">遠傳電信</option>
+        <option value="cht">中華電信</option>
+        <option value="twm">台灣大哥大</option>
+        <option value="samsung">Samsung</option>
+        <option value="apple">Apple</option>
+        <option value="ai">AI 浪潮</option>
+        <option value="openai">OpenAI</option>
+        <option value="google_alert">Google 核心</option>
+        <option value="tech_3c">3C情報</option>
+        <option value="mobile">手機通訊</option>
+      </optgroup>
+      <!-- 生活與重大突發 -->
+      <optgroup label="🚨 生活與突發">
+        <option value="quake">地震速報</option>
+        <option value="typhoon">颱風動態</option>
+        <option value="anti_fraud">165 防詐</option>
+        <option value="transit">大眾運輸</option>
+        <option value="accident">即時車禍</option>
+        <option value="food_safety">食安追蹤</option>
+        <option value="discount">好康優惠</option>
+        <option value="travel">旅遊生活</option>
+        <option value="movie">電影影集</option>
+        <option value="netflix">Netflix</option>
+      </optgroup>
+      <!-- 國際與財經 -->
+      <optgroup label="🌐 全球與財經">
+        <option value="world">世界大局</option>
+        <option value="oil">石油能源</option>
+        <option value="us">美國焦點</option>
+        <option value="jp">日本情報</option>
+        <option value="kr">韓國動態</option>
+        <option value="cn">中國觀察</option>
+      </optgroup>
+    </select>
+  </div>
+</div>
+
     </header>
 
     <!-- 中間卡片瀑布流區域 -->

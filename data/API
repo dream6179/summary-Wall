@@ -35,37 +35,39 @@ export default {
           }
         }
 
-        // ==========================================================================
-        // 🚀【你的核心生圖區塊】：如果 KV 沒找到，才真正驚動繪圖模型
-        // ==========================================================================
-        // （這裡保持你原本呼叫 Stable Diffusion 或繪圖 API 的 fetch 邏輯）
-        /*
-        const imageResponse = await fetch("你的繪圖模型API網址", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: `幫我畫一張關於 ${aiImageTitle} 的科技感高畫質封面` })
-        });
-        const imageJson = await imageResponse.json();
-        */
-        
-        // 假設你原本生圖完，最後包裝傳給前端的 JSON 字串叫做 finalImagePayload
-        // 例如：const finalImagePayload = JSON.stringify({ imageUrl: imageJson.data[0].url });
-        
-        // ==========================================================================
+        // ==========================================================================
+        // 🚀【你的核心生圖區塊】：把原本的註解拿掉，讓大腦真正動起來！
+        // ==========================================================================
+        
+        // 1. 呼叫你原本接好的真實繪圖 API 
+        const imageResponse = await fetch("你的繪圖模型API網址", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: `幫我畫一張關於 ${aiImageTitle} 的科技感高畫質封面` })
+        });
+        
+        const imageJson = await imageResponse.json();
+        
+        // 2. 🚨【極重要】：請確保這裡的挖取路徑（例如 data[0].url）完全符合你生圖 API 回傳的真實 JSON 結構！
+        const realUrl = imageJson.data[0].url; 
+        
+        // 3. 讓變數原地復活，這樣下方的 KV 儲存跟 Response 才能順利打包帶走！
+        const finalImagePayload = JSON.stringify({ imageUrl: realUrl });
+        
+        // ==========================================================================
 
-        // 3. 💾 功德圓滿！將這份剛畫好的完美封面 JSON，狠狠塞進 KV 口袋封印 30 天
-        if (env.NEWS_CACHE_KV && finalImagePayload) {
-          ctx.waitUntil(env.NEWS_CACHE_KV.put(imageCacheKey, finalImagePayload, { expirationTtl: 2592000 }));
-          console.log("💾 AI 封面成功打包存入邊緣 KV 快取，下回免燒點數！");
-        }
+        if (env.NEWS_CACHE_KV && finalImagePayload) {
+          ctx.waitUntil(env.NEWS_CACHE_KV.put(imageCacheKey, finalImagePayload, { expirationTtl: 2592000 }));
+          console.log("💾 AI 封面成功打包存入邊緣 KV 快取，下回免燒點數！");
+        }
 
-        // 正常吐給前端看
-        return new Response(finalImagePayload, {
-          headers: { 
-            "Content-Type": "application/json", 
-            ...corsHeaders 
-          }
-        });
+        return new Response(finalImagePayload, {
+          headers: { 
+            "Content-Type": "application/json", 
+            ...corsHeaders 
+          }
+        });
+
 
       } catch (imgError) {
         return new Response(JSON.stringify({ error: imgError.message }), { headers: corsHeaders });

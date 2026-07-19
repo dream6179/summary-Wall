@@ -22,7 +22,7 @@ let itemsSinceAd = 24;
 let itemsSincePromo = 6;        
 
 // ==========================================================================
-// 2. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖自癒版 - 徹底破除塌陷完全體)
+// 2. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖回歸初心版)
 // ==========================================================================
 function renderCards(dataArray, append = false) {
     const container = document.getElementById("wall-container");
@@ -43,40 +43,14 @@ function renderCards(dataArray, append = false) {
         const isNew = item.isNewData ? "font-important" : "";
         const tagClass = item.isImportant ? "card-tag font-important" : `card-tag ${isNew}`;
 
-        // 🍌【預設相框分流】：預設給予 16:9 的輕量化安全基底
-        let initialImgSrc = item.image || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='9'></svg>";
-        
+        // 💡 🌟【核心回歸】：直接在這裡把你的時間戳記焊死在網址後面！
+        // 這樣瀏覽器渲染 <img> 時，就會帶著這條網址直接去戳你的 Worker，同時徹底繞過手機的髒快取！
+        const cardImgUrl = item.image || `https://news-api.zhtttttt.workers.dev/?aiImageTitle=${encodeURIComponent(item.title)}&_cb=${Date.now()}`;
+
         const imgLoadAttr = !item.image ? `onload="this.parentElement.style.animation='none'"` : '';
-        
-        // ⚡【鐵腕物理防禦線】：強制注入核心樣式，保證相框絕對不會被壓縮成 0 像素！
-        const imgContainerStyle = `style="width: 100%; aspect-ratio: 16/9; display: block; position: relative; background-color: #f1f3f4; overflow: hidden; ${!item.image ? 'animation: badgePulse 2s infinite;' : ''}"`;
+        const imgContainerStyle = !item.image ? `style="background-color:#f1f3f4; position:relative; animation: badgePulse 2s infinite;"` : '';
 
-        // 💡 🌟【核心非同步生圖智慧攔截】
-        if (!item.image) {
-            const imageUrl = `https://news-api.zhtttttt.workers.dev/?aiImageTitle=${encodeURIComponent(item.title)}&_cb=${Date.now()}`;
-            
-            fetch(imageUrl)
-              .then(res => {
-                if (!res.ok) throw new Error(`HTTP 錯誤! 狀態碼: ${res.status}`);
-                return res.json();
-              })
-              .then(data => {
-                const localImg = cardElement.querySelector('.card-image');
-                if (data && data.imageUrl) {
-                  // 🛡️ 雙端 HTTPS 自癒防線，防止 Mixed Content 安全攔截
-                  let secureUrl = data.imageUrl.replace(/^http:/i, 'https:');
-                  if (localImg) {
-                    localImg.src = secureUrl;
-                    localImg.parentElement.style.animation = 'none';
-                  }
-                } else {
-                  console.warn("後端有回應，但欄位異常:", data);
-                }
-              })
-              .catch(err => console.error("非同步封面獲取失敗:", err));
-        }
-
-        // 🛠️ 內嵌相框強制綁定高畫質滿版樣式 width:100%; height:100%; object-fit:cover;
+        // 🛠️ 乾乾淨淨，完全沒有任何多餘的非同步 fetch 阻礙！
         cardElement.innerHTML = `
             <button class="card-more-btn" title="更多選項">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -90,10 +64,10 @@ function renderCards(dataArray, append = false) {
                 <button class="menu-item btn-hide">不要顯示</button>
             </div>
 
-            <!-- 🎯 外殼牢牢鎖定大屏相框，內部圖片強制拉滿 -->
+            <!-- 💡 讓 <img> 的 src 直接咬死心愛的 cardImgUrl 網址 -->
             <div class="card-image-container" ${imgContainerStyle}>
-                <img src="${initialImgSrc}" class="card-image" alt="news thumbnail" loading="lazy" ${imgLoadAttr} style="width: 100%; height: 100%; display: block; object-fit: cover;">
-                ${!item.image ? `<div style="position:absolute; bottom:6px; right:6px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.55rem; padding:2px 6px; border-radius:4px; pointer-events:none; z-index:2;">🍌 AI 畫布</div>` : ''}
+                <img src="${cardImgUrl}" class="card-image" alt="news thumbnail" loading="lazy" ${imgLoadAttr}>
+                ${!item.image ? `<div style="position:absolute; bottom:6px; right:6px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.55rem; padding:2px 6px; border-radius:4px; pointer-events:none;">🍌 AI 畫布</div>` : ''}
             </div>
 
             <div class="${tagClass}">${item.isNewData ? '✨ 新推播 | ' : ''}${escapeHtml(item.tag)}</div>
@@ -122,7 +96,7 @@ function renderCards(dataArray, append = false) {
             </div>
         `;
 
-        // 詳細視窗點擊
+        // 💡 點擊詳細視窗（保持使用 cardImgUrl，確保彈出視窗與外部卡片共享同一個網址快取）
         cardElement.addEventListener("click", async () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;
@@ -138,15 +112,13 @@ function renderCards(dataArray, append = false) {
             document.getElementById('modal-source').textContent = item.source;
             document.getElementById('modal-time').textContent = item.time;
             
-            const currentCardImgSrc = cardElement.querySelector('.card-image')?.src || initialImgSrc;
-
             let modalImageHtml = '';
             if (item.image) {
-                modalImageHtml = `<div class="modal-image-container" style="margin: 0 0 12px 0; border-radius: 8px; overflow: hidden; display: block;"><img src="${currentCardImgSrc}" class="modal-image" alt="modal img" style="width:100%; display:block; object-fit:cover;"></div>`;
+                modalImageHtml = `<div class="modal-image-container" style="margin: 0 0 12px 0; border-radius: 8px; overflow: hidden; display: block;"><img src="${cardImgUrl}" class="modal-image" alt="modal img" style="width:100%; display:block; object-fit:cover;"></div>`;
             } else {
                 modalImageHtml = `
                     <div class="modal-image-container" style="background-color:#f1f3f4; position:relative; margin: 0 0 12px 0; border-radius:8px; overflow:hidden; aspect-ratio: 16/9;">
-                        <img src="${currentCardImgSrc}" class="modal-image" alt="Banana Gen Art" style="width:100%; height:100%; object-fit:cover; display:block;">
+                        <img src="${cardImgUrl}" class="modal-image" alt="Banana Gen Art" style="width:100%; height:100%; object-fit:cover; display:block;" onload="this.parentElement.style.animation='none'">
                         <div style="position:absolute; bottom:6px; right:6px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.55rem; padding:2px 6px; border-radius:4px; pointer-events:none;">🍌 奈米香蕉 AI 畫布</div>
                     </div>
                 `;
@@ -181,6 +153,7 @@ function renderCards(dataArray, append = false) {
                 modal.classList.remove('hidden');
                 history.pushState({ modalOpen: true }, '');
 
+                // 雙端防禦串流核心邏輯
                 try {
                     const fetchUrl = `https://news-api.zhtttttt.workers.dev/?aiTitle=${encodeURIComponent(item.title)}&aiSnippet=${encodeURIComponent(item.snippet)}`;
                     const response = await fetch(fetchUrl);
@@ -260,7 +233,7 @@ function renderCards(dataArray, append = false) {
                     }
                 } catch (error) {
                     const aiBox = document.getElementById('ai-response-box');
-                    if (aiBox) aiBox.innerHTML = `<p>AI 智囊團目前連線外洩或逾時，請點擊下方閱讀原文按鈕查看完整內容。</p>`;
+                    if (aiBox) aiBox.innerHTML = `<p>AI 智囊團目前連線外洩 or 逾時，請點擊下方閱讀原文按鈕查看完整內容。</p>`;
                 }
             }
         });
@@ -294,6 +267,7 @@ function renderCards(dataArray, append = false) {
         container.appendChild(cardElement);
     });
 }
+
 
 // ==========================================================================
 // 3. 無限滾動邏輯

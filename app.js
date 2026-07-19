@@ -43,7 +43,7 @@ function renderCards(dataArray, append = false) {
         const isNew = item.isNewData ? "font-important" : "";
         const tagClass = item.isImportant ? "card-tag font-important" : `card-tag ${isNew}`;
 
-        // 🍌【預設相框分流】：有原圖用原圖，沒原圖先給一張輕量讀取占位圖（例如灰色底或透明基底）
+        // 🍌【預設相框分流】：有原圖用原圖，沒原圖先給一張輕量讀取占位圖（防止版面塌陷）
         let initialImgSrc = item.image || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='9'></svg>";
         
         const imgLoadAttr = !item.image ? `onload="this.parentElement.style.animation='none'"` : '';
@@ -61,14 +61,15 @@ function renderCards(dataArray, append = false) {
               })
               .then(data => {
                 if (data && data.imageUrl) {
-                  // 🎯 絕招：在目前這張卡片的局部記憶體樹中往下搜，100% 精準填入，絕不撞車！
+                  // 🎯 成功拿到圖片，精準填入屬於它自己的那張卡片裡
                   const localImg = cardElement.querySelector('.card-image');
                   if (localImg) localImg.src = data.imageUrl;
                 }
               })
-              .catch(err => console.error("手機端抓圖片翻車了:", err));
+              .catch(err => console.error("抓圖片翻車了:", err));
         }
 
+        // 🛠️ 這裡已經把 src 改回 ${initialImgSrc}，且 class 改回 ${tagClass}
         cardElement.innerHTML = `
             <button class="card-more-btn" title="更多選項">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -88,7 +89,7 @@ function renderCards(dataArray, append = false) {
                 ${!item.image ? `<div style="position:absolute; bottom:6px; right:6px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.55rem; padding:2px 6px; border-radius:4px; pointer-events:none;">🍌 AI 畫布</div>` : ''}
             </div>
 
-            <div class="tagClass">${item.isNewData ? '✨ 新推播 | ' : ''}${escapeHtml(item.tag)}</div>
+            <div class="${tagClass}">${item.isNewData ? '✨ 新推播 | ' : ''}${escapeHtml(item.tag)}</div>
             <h2 class="card-title">${escapeHtml(item.title)}</h2>
             <p class="card-snippet">${escapeHtml(item.snippet)}</p>
             
@@ -130,8 +131,7 @@ function renderCards(dataArray, append = false) {
             document.getElementById('modal-source').textContent = item.source;
             document.getElementById('modal-time').textContent = item.time;
             
-            // 🎯【克隆自癒快取】：直接拿目前卡片上顯示的圖片網址（可能是原圖，也可能是剛剛非同步載入好的 AI 圖）
-            // 這樣能保證彈出視窗打開的瞬間 0 秒秒開，完全不需要重新發起任何網路請求！
+            // 🎯【克隆自癒快取】：直接拿目前卡片上顯示的圖片網址
             const currentCardImgSrc = cardElement.querySelector('.card-image')?.src || initialImgSrc;
 
             let modalImageHtml = '';

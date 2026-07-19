@@ -22,7 +22,7 @@ let itemsSinceAd = 24;
 let itemsSincePromo = 6;        
 
 // ==========================================================================
-// 2. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖自癒診斷版)
+// 2. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖自癒版 - 徹底破除塌陷完全體)
 // ==========================================================================
 function renderCards(dataArray, append = false) {
     const container = document.getElementById("wall-container");
@@ -43,13 +43,15 @@ function renderCards(dataArray, append = false) {
         const isNew = item.isNewData ? "font-important" : "";
         const tagClass = item.isImportant ? "card-tag font-important" : `card-tag ${isNew}`;
 
-        // 🍌【預設相框分流】：有原圖用原圖，沒原圖先給基底預設圖
-        let initialImgSrc = item.image || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='9' viewBox='0 0 16 9'><rect width='100%' height='100%' fill='%23f1f3f4'/></svg>";
+        // 🍌【預設相框分流】：預設給予 16:9 的輕量化安全基底
+        let initialImgSrc = item.image || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='9'></svg>";
         
         const imgLoadAttr = !item.image ? `onload="this.parentElement.style.animation='none'"` : '';
-        const imgContainerStyle = !item.image ? `style="background-color:#f1f3f4; position:relative; animation: badgePulse 2s infinite;"` : '';
+        
+        // ⚡【鐵腕物理防禦線】：強制注入核心樣式，保證相框絕對不會被壓縮成 0 像素！
+        const imgContainerStyle = `style="width: 100%; aspect-ratio: 16/9; display: block; position: relative; background-color: #f1f3f4; overflow: hidden; ${!item.image ? 'animation: badgePulse 2s infinite;' : ''}"`;
 
-        // 💡 🌟【核心非同步生圖攔截】
+        // 💡 🌟【核心非同步生圖智慧攔截】
         if (!item.image) {
             const imageUrl = `https://news-api.zhtttttt.workers.dev/?aiImageTitle=${encodeURIComponent(item.title)}&_cb=${Date.now()}`;
             
@@ -61,32 +63,20 @@ function renderCards(dataArray, append = false) {
               .then(data => {
                 const localImg = cardElement.querySelector('.card-image');
                 if (data && data.imageUrl) {
-                  // 🛡️ 核心防禦：手機端（iOS）極度排斥 http 圖片。如果是 http，強制在前端升級成 https
+                  // 🛡️ 雙端 HTTPS 自癒防線，防止 Mixed Content 安全攔截
                   let secureUrl = data.imageUrl.replace(/^http:/i, 'https:');
                   if (localImg) {
                     localImg.src = secureUrl;
                     localImg.parentElement.style.animation = 'none';
                   }
                 } else {
-                  // 🔍【診斷埋點 A】：後端有通，但裡面根本沒給 imageUrl（顯示極簡科技背景圖）
-                  console.warn("後端有回傳，但找不到 imageUrl 欄位:", data);
-                  if (localImg) {
-                    localImg.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80";
-                    localImg.parentElement.style.animation = 'none';
-                  }
+                  console.warn("後端有回應，但欄位異常:", data);
                 }
               })
-              .catch(err => {
-                // 🔍【診斷埋點 B】：手機連線失敗、跨域被擋或 Worker 報錯
-                console.error("手機端戳圖片 API 徹底翻車:", err);
-                const localImg = cardElement.querySelector('.card-image');
-                if (localImg) {
-                  localImg.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80";
-                  localImg.parentElement.style.animation = 'none';
-                }
-              });
+              .catch(err => console.error("非同步封面獲取失敗:", err));
         }
 
+        // 🛠️ 內嵌相框強制綁定高畫質滿版樣式 width:100%; height:100%; object-fit:cover;
         cardElement.innerHTML = `
             <button class="card-more-btn" title="更多選項">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -100,9 +90,10 @@ function renderCards(dataArray, append = false) {
                 <button class="menu-item btn-hide">不要顯示</button>
             </div>
 
+            <!-- 🎯 外殼牢牢鎖定大屏相框，內部圖片強制拉滿 -->
             <div class="card-image-container" ${imgContainerStyle}>
-                <img src="${initialImgSrc}" class="card-image" alt="news thumbnail" loading="lazy" ${imgLoadAttr}>
-                ${!item.image ? `<div style="position:absolute; bottom:6px; right:6px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.55rem; padding:2px 6px; border-radius:4px; pointer-events:none;">🍌 AI 畫布</div>` : ''}
+                <img src="${initialImgSrc}" class="card-image" alt="news thumbnail" loading="lazy" ${imgLoadAttr} style="width: 100%; height: 100%; display: block; object-fit: cover;">
+                ${!item.image ? `<div style="position:absolute; bottom:6px; right:6px; background-color:rgba(0,0,0,0.6); color:white; font-size:0.55rem; padding:2px 6px; border-radius:4px; pointer-events:none; z-index:2;">🍌 AI 畫布</div>` : ''}
             </div>
 
             <div class="${tagClass}">${item.isNewData ? '✨ 新推播 | ' : ''}${escapeHtml(item.tag)}</div>
@@ -131,7 +122,7 @@ function renderCards(dataArray, append = false) {
             </div>
         `;
 
-        // 💡 詳細視窗點擊
+        // 詳細視窗點擊
         cardElement.addEventListener("click", async () => {
             const modal = document.getElementById('article-modal');
             if (!modal) return;

@@ -185,23 +185,81 @@ export default {
       }
     }
 
-    // ==========================================================================
-    // 📰 【常規路由】：輕量級 RSS 智慧混流發牌 (中央社、科技新報、巴哈GNN、Yahoo股市)
-    // ==========================================================================
-    const currentTag = searchParams.get('tag') || 'all';
-    const browserHeader = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" };
-    
-    const sources = {
-      "cna": { url: "https://feeds.feedburner.com/cnaFirstNews", name: "中央通訊社", tag: "焦點新聞" },
-      "tech": { url: "https://technews.tw/feed/", name: "科技新報 TechNews", tag: "科技新知" },
-      
-      // 🎮 🎯【核心重灌】：直接無痛換成巴哈姆特官方 GNN RSS 水管！
-      "game": { url: "https://rss.bahamut.com.tw/gnn.xml", name: "巴哈姆特 GNN 新聞", tag: "遊戲情報" },
-      
-      "stock": { url: "https://tw.stock.yahoo.com/rss?category=tw-market", name: "Yahoo 奇摩股市", tag: "財經新聞" }
-    };
+// ==========================================================================
+// 🧙‍♂️ 輕量級安全防卡死 RSS 解析器（兩步拆解自癒版）
+// ==========================================================================
+function parseRssToJSON(xmlText, sourceName, defaultTagName) {
+  const items = [];
+  
+  // ⚡ 核心改裝 1：用最單純的線性規則切出每一篇新聞的 <item>，絕不回溯
+  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+  let match;
+  
+  // ⚡ 核心改裝 2：獨立的 CDATA 清洗助手，跟標籤提取徹底分家
+  const cleanCdata = (str) => {
+    if (!str) return "";
+    return str.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1").trim();
+  };
 
-    // 💡 下方的 routing 判斷完全維持 sources.game 不動，它就會自動對接巴哈了！
+  while ((match = itemRegex.exec(xmlText)) !== null) {
+    const itemContent = match[1];
+    
+    // 🎯 第一步：用最單純的結構把區塊撈出來
+    const titleMatch = itemContent.match(/<title>([\s\S]*?)<\/title>/i);
+    const linkMatch = itemContent.match(/<link>([\s\S]*?)<\/link>/i);
+    const descMatch = itemContent.match(/<description>([\s\S]*?)<\/description>/i);
+    const pubDateMatch = itemContent.match(/<pubDate>([\s\S]*?)<\/pubDate>/i);
+    
+    // 🎯 第二步：解開 CDATA 糖衣
+    const title = cleanCdata(titleMatch ? titleMatch[1] : "");
+    const link = cleanCdata(linkMatch ? linkMatch[1] : "");
+    const description = cleanCdata(descMatch ? descMatch[1] : "");
+    const pubDate = pubDateMatch ? pubDateMatch[1] : "";
+
+    // 🎯 第三步：精準挖取巴哈原圖
+    let imageUrl = "";
+    const mediaMatch = itemContent.match(/<(media:content|media:thumbnail|enclosure)[^>]+url=["']([^"']+)["']/i);
+    
+    if (mediaMatch) {
+      imageUrl = mediaMatch[2];
+    } else {
+      // 剝掉 CDATA 後，巴哈的原圖網址就赤裸裸躺在 description 裡，直接用最穩的 <img> 規則挖它！
+      const imgMatch = description.match(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/i);
+      if (imgMatch) imageUrl = imgMatch[1];
+    }
+
+    // 🎯 第四步：時間轉換
+    let timestamp = 0; 
+    let displayTime = "今日";
+    if (pubDate) {
+      try {
+        const dateObj = new Date(pubDate.trim());
+        if (!isNaN(dateObj.getTime())) { 
+          timestamp = dateObj.getTime(); 
+          displayTime = dateObj.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false }); 
+        }
+      } catch (e) {}
+    }
+    
+    // 🎯 第五步：刮除所有 HTML 標籤，留下純淨的新聞摘要
+    const cleanSnippet = description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    
+    items.push({
+      id: `news-${Math.random().toString(36).substring(2, 9)}`,
+      tag: defaultTagName, 
+      isFeatured: false, 
+      isImportant: items.length < 2,
+      title: title, 
+      snippet: cleanSnippet.substring(0, 120) + (cleanSnippet.length > 120 ? "..." : ""),
+      source: sourceName, 
+      time: displayTime, 
+      link: link, 
+      timestamp: timestamp, 
+      image: imageUrl
+    });
+  }
+  return items;
+}
 
 
     try {

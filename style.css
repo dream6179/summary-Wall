@@ -138,17 +138,32 @@ body {
 /* ==========================================================================
    3. 主題篩選標籤列 (🎯 雙劍合璧：徹底解決不置中與滑順多選面板)
    ========================================================================== */
+/* 🎯 導覽頁籤區：手機端橫向流暢滑動，按鈕絕對不折行！ */
 .tab-container {
     display: flex;
-    justify-content: center; /* 完美防禦置中 */
+    justify-content: center;
     align-items: center;
     gap: 8px;
     width: 100%;
     max-width: 1200px;
-    margin: 16px auto; 
-    padding: 0 16px;
-    flex-wrap: wrap; /* RWD 手機端自動優雅折行 */
+    margin: 12px auto; 
+    padding: 4px 16px;
+    overflow-x: auto;         /* 橫向滑動 */
+    white-space: nowrap;      /* 強制一行單排 */
+    scrollbar-width: none;    /* 隱藏 Firefox 滾動條 */
 }
+
+.tab-container::-webkit-scrollbar {
+    display: none;             /* 隱藏 Chrome/Safari/手機滾動條 */
+}
+
+/* 手機端寬度不足時，自動靠左對齊，方便手動滑動觀看 */
+@media (max-width: 600px) {
+    .tab-container {
+        justify-content: flex-start;
+    }
+}
+
 
 .tab, .tab-btn {
     background: none;

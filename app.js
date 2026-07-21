@@ -721,14 +721,14 @@ function setupEventListeners() {
         });
     }
 
-    // ==========================================================================
-    // 💬 賽博聊天室 UI 開關與送出控制
+        // ==========================================================================
+    // 💬 賽博聊天室 UI 開關與送出控制 (表單完全體進化版)
     // ==========================================================================
     const chatToggleBtn = document.getElementById('chat-toggle-btn');
     const chatContainer = document.getElementById('chat-container');
     const chatCloseX = document.getElementById('chat-close-x');
     const chatInput = document.getElementById('chat-input');
-    const chatSendBtn = document.getElementById('chat-send-btn');
+    const chatForm = document.getElementById('chat-form'); // 🎯 捕獲全新表單元件
     const chatBadge = document.getElementById('chat-badge');
 
     if (chatToggleBtn && chatContainer) {
@@ -765,19 +765,24 @@ function setupEventListeners() {
         }
     };
 
-    if (chatInput) {
-        chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                handleCommitMessage();
-            }
+    // 🎯【表單最高指揮官】：用標準 Form Submit 同時解決電腦 Enter 與手機鍵盤發送問題
+    if (chatForm) {
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault(); // 攔截網頁傳統重新整理
+            
+            // 🧙‍♂️ 終極防禦結界：如果使用者正在用新注音「選字」敲 Enter，直接沒收，不准發送！
+            if (e.isComposing || (chatInput && chatInput.isComposingTraditional)) return;
+            
+            handleCommitMessage(); // 沒在選字，大腳一開正式發射！
         });
     }
 
-    if (chatSendBtn) {
-        chatSendBtn.addEventListener('click', handleCommitMessage);
+    // 📡 追加注音選字狀態監視雷達
+    if (chatInput) {
+        chatInput.addEventListener('compositionstart', () => { chatInput.isComposingTraditional = true; });
+        chatInput.addEventListener('compositionend', () => { chatInput.isComposingTraditional = false; });
     }
-} // 👈 🎯 完美修復：這裡就是之前漏掉的閉合大括號，防線成功合攏！
+
 
 /* ==========================================================================
    9. 工具函式、UI 渲染與開機大印

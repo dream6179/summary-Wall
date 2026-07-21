@@ -35,28 +35,23 @@ function initChatEngine() {
   console.log("⚡ 正在開通與太空艙的即時連線...");
   socket = new WebSocket(chatUrl);
 
-  // 1. 連線成功建立
   socket.onopen = () => {
     console.log("🟩 已成功潛入即時聊天室！");
   };
 
-  // 2. 接收太空艙廣播的訊息
   socket.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
 
       if (data.system) {
-        // 📢 處理系統點名（例如：🔥 目前在線：3 人）
         updateSystemStatus(data.message);
       } else {
-        // 💬 處理一般情報員的對話訊息
         appendMessageBubble(data.user, data.text, data.user === myUsername);
         
-        // 🎯 未讀小紅點提示：如果收到「別人的訊息」，而且「聊天室目前是關閉狀態」
         const chatContainer = document.getElementById('chat-container');
         if (chatContainer && chatContainer.classList.contains('hidden') && data.user !== myUsername) {
             const chatBadge = document.getElementById('chat-badge');
-            if (chatBadge) chatBadge.classList.remove('hidden'); // 亮起左下角未讀小提示燈！
+            if (chatBadge) chatBadge.classList.remove('hidden'); 
         }
       }
     } catch (err) {
@@ -64,7 +59,6 @@ function initChatEngine() {
     }
   };
 
-  // 3. 自動重連機制（萬一網路波動斷開，10秒後自動復活）
   socket.onclose = () => {
     console.log("🟥 與太空艙斷開連線，10秒後嘗試自動重連...");
     setTimeout(() => {
@@ -73,7 +67,6 @@ function initChatEngine() {
   };
 }
 
-// ✍️ 送出訊息的發射器
 function sendMessage(textInput) {
   if (!socket || socket.readyState !== WebSocket.OPEN || !textInput.trim()) return;
 
@@ -83,12 +76,11 @@ function sendMessage(textInput) {
     timestamp: Date.now()
   };
 
-  // 毫秒級送上雲端記憶體太空艙
   socket.send(JSON.stringify(payload));
 }
 
 /* ==========================================================================
-   3. 核心功能：動態渲染卡片 (💡 瀑布流全方位 AI 滿圖進化)
+   3. 核心功能：動態渲染卡片
    ========================================================================== */
 function renderCards(dataArray, append = false) {
     const container = document.getElementById("wall-container");
@@ -150,7 +142,7 @@ function renderCards(dataArray, append = false) {
                     </button>
                     <button class="action-btn share-btn" title="分享">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5(1.25).81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/>
+                            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/>
                         </svg>
                     </button>
                 </div>
@@ -537,19 +529,18 @@ function simulateLiveUpdates() {
 }
 
 /* ==========================================================================
-   8. 全域事件監聽組合中心（🎯 完美閉合，修復大括號與頁籤選擇器）
+   8. 全域事件監聽組合中心
    ========================================================================== */
 function setupEventListeners() {
     const searchInput = document.getElementById('search-input');
     const clearSearchBtn = document.getElementById('clear-search');
-    const tabsContainer = document.querySelector('.tab-container'); // 🎯 修正：抓取新版 class
+    const tabsContainer = document.querySelector('.tab-container');
     const customTabBtn = document.getElementById("custom-tab-btn");
     const customDropdownMenu = document.getElementById("custom-dropdown-menu");
     const customClearBtn = document.getElementById("custom-clear-btn");
     const bttBtn = document.getElementById('back-to-top');
     const badge = document.getElementById('new-data-badge');
 
-    // A. 搜尋功能監聽
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             searchQuery = e.target.value;
@@ -565,7 +556,6 @@ function setupEventListeners() {
         });
     }
 
-    // B. 導覽頁籤中央處理（合體固定頁籤與多選開關）
     if (tabsContainer) {
         tabsContainer.addEventListener('click', (e) => {
             const clickedTab = e.target.closest('.tab, .tab-btn'); 
@@ -581,7 +571,6 @@ function setupEventListeners() {
                 currentTag = tag; 
                 loadSummaryData(); 
             } else {
-                // 點擊自訂按鈕 ➡️ 開關多選面板
                 e.stopPropagation();
                 if (customDropdownMenu) customDropdownMenu.classList.toggle('hidden');
                 
@@ -593,7 +582,6 @@ function setupEventListeners() {
         });
     }
 
-    // C. 多選面板防漏氣與勾選變更
     if (customDropdownMenu) {
         customDropdownMenu.addEventListener('click', (e) => {
             e.stopPropagation(); 
@@ -607,7 +595,6 @@ function setupEventListeners() {
         });
     }
 
-    // D. 🧹 「一鍵清空已選」
     if (customClearBtn) {
         customClearBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -621,14 +608,12 @@ function setupEventListeners() {
         });
     }
 
-    // E. 點擊網頁空白處，自動收起多選選單
     document.addEventListener('click', () => {
         if (customDropdownMenu && !customDropdownMenu.classList.contains('hidden')) {
             customDropdownMenu.classList.add('hidden');
         }
     });
 
-    // 🧙‍♂️ 打包勾選狀態送至後端
     function triggerCustomMultiFilter() {
         if (!customDropdownMenu) return;
         const checkedBoxes = customDropdownMenu.querySelectorAll('input[type="checkbox"]:checked');
@@ -638,13 +623,11 @@ function setupEventListeners() {
 
         localStorage.setItem("user_custom_tags_array", JSON.stringify(selectedValues));
 
-        // 零選特權：如果沒勾選任何類型，currentTag 帶空字串
         currentTag = selectedValues.length === 0 ? "" : selectedValues.join(',');
         
         loadSummaryData(); 
     }
 
-    // F. 回到頂部控制
     const refreshToTopWithNewData = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         if (badge) badge.classList.add('hidden');
@@ -681,7 +664,6 @@ function setupEventListeners() {
         badge.addEventListener('click', () => { refreshToTopWithNewData(); });
     }
 
-    // G. 彈窗與設定控制
     const modal = document.getElementById('article-modal');
     if (modal) {
         const modalClose = modal.querySelector('.modal-close');
@@ -721,14 +703,12 @@ function setupEventListeners() {
         });
     }
 
-        // ==========================================================================
-    // 💬 賽博聊天室 UI 開關與送出控制 (表單完全體進化版)
-    // ==========================================================================
+    // 💬 賽博聊天室 UI 控制 (表單完全體版)
     const chatToggleBtn = document.getElementById('chat-toggle-btn');
     const chatContainer = document.getElementById('chat-container');
     const chatCloseX = document.getElementById('chat-close-x');
     const chatInput = document.getElementById('chat-input');
-    const chatForm = document.getElementById('chat-form'); // 🎯 捕獲全新表單元件
+    const chatForm = document.getElementById('chat-form'); 
     const chatBadge = document.getElementById('chat-badge');
 
     if (chatToggleBtn && chatContainer) {
@@ -765,24 +745,19 @@ function setupEventListeners() {
         }
     };
 
-    // 🎯【表單最高指揮官】：用標準 Form Submit 同時解決電腦 Enter 與手機鍵盤發送問題
     if (chatForm) {
         chatForm.addEventListener('submit', (e) => {
-            e.preventDefault(); // 攔截網頁傳統重新整理
-            
-            // 🧙‍♂️ 終極防禦結界：如果使用者正在用新注音「選字」敲 Enter，直接沒收，不准發送！
+            e.preventDefault(); 
             if (e.isComposing || (chatInput && chatInput.isComposingTraditional)) return;
-            
-            handleCommitMessage(); // 沒在選字，大腳一開正式發射！
+            handleCommitMessage(); 
         });
     }
 
-    // 📡 追加注音選字狀態監視雷達
     if (chatInput) {
         chatInput.addEventListener('compositionstart', () => { chatInput.isComposingTraditional = true; });
         chatInput.addEventListener('compositionend', () => { chatInput.isComposingTraditional = false; });
     }
-
+} // 👈 🎯【重重大關】補上了閉合的大括號，神經網路正式打通！
 
 /* ==========================================================================
    9. 工具函式、UI 渲染與開機大印
@@ -842,9 +817,9 @@ window.addEventListener('popstate', (event) => {
 
 // ⚡ 唯一、純淨的中央開機引擎
 document.addEventListener("DOMContentLoaded", () => {
-    initCustomStorage();     // 1. 優先從本機記憶體同步自訂勾選狀態
-    loadSummaryData();       // 2. 啟動對接新聞 Worker (內含快取盾牌)
-    setupEventListeners();   // 3. 統一發動全網頁事件監聽（聊天按鈕解鎖正常！）
-    simulateLiveUpdates();   // 4. 開啟背景即時重新整理
-    initChatEngine();        // 5. 🎯 火箭正式開通極速光纖通道！
+    initCustomStorage();     
+    loadSummaryData();       
+    setupEventListeners();   
+    simulateLiveUpdates();   
+    initChatEngine();        
 });

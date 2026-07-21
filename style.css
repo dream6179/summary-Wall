@@ -580,7 +580,11 @@ body {
     bottom: 84px;
     left: 24px;
     width: 340px;
+    /* 🎯 響應式第一道防線：確保在大中型手機上，寬度最多只佔滿螢幕減去邊距，絕不外溢 */
+    max-width: calc(100% - 48px); 
     height: 450px;
+    /* 🎯 響應式第二道防線：確保在矮螢幕手機上不會頂天立地遮住新聞標題 */
+    max-height: 65vh; 
     background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(12px);
     border: 1px solid var(--border-color);
@@ -593,8 +597,41 @@ body {
     opacity: 1;
     transform: translateY(0);
     visibility: visible;
-    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s; /* ✅ 完美修正：加入逗號與動態登場 */
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
 }
+
+/* 🧙‍♂️ 解放登場動畫：當聊天室隱藏時的狀態 */
+#chat-container.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(12px) scale(0.95);
+    display: flex !important;
+}
+
+/* 📱 終極防禦：針對小型手機（螢幕寬度小於 400px）進行微距排版壓縮 */
+@media (max-width: 400px) {
+    #chat-toggle-btn {
+        bottom: 16px;
+        left: 16px;
+        width: 44px; /* 微幅縮小按鈕，更精緻 */
+        height: 44px;
+    }
+    #chat-container {
+        bottom: 72px;
+        left: 16px;
+        width: calc(100% - 32px); /* 自動填滿手機寬度，左右保留 16px 完美貼邊 */
+        max-width: none;
+        height: 380px; /* 縮減整體高度，騰出空間給虛擬鍵盤 */
+    }
+    #chat-box {
+        padding: 12px; /* 壓縮訊息內襯，換取更多情報閱讀空間 */
+    }
+    .chat-input-area {
+        padding: 8px; /* 緊湊型輸入欄 */
+    }
+}
+
 
 /* 🧙‍♂️ 完美釋放：當聊天室隱藏時，往左下方優雅縮回滑落 */
 #chat-container.hidden {
